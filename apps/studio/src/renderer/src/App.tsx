@@ -14,7 +14,7 @@ import type {
 
 import { ResizablePanels } from './components/studio/ResizablePanels'
 
-const APP_TITLE = 'studio Studio'
+const APP_TITLE = 'Studio'
 
 type PreviewRuntimeError = {
   message: string
@@ -255,10 +255,10 @@ function SettingsModal(props: {
             className="w-full border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:outline-1 focus:outline-primary"
             value={draft.projectsRoot}
             onChange={(e) => setDraft((d) => ({ ...d, projectsRoot: e.target.value }))}
-            placeholder="e.g., /Users/you/studioProjects"
+            placeholder="e.g., /Users/you/StudioProjects"
           />
           <div className="text-xs text-muted-foreground">
-            Where studio stores generated projects on your machine.
+            Where Studio stores generated projects on your machine.
           </div>
         </div>
 
@@ -1716,7 +1716,7 @@ const applyDesignChanges = async () => {
                 <div className="min-h-0 flex-1 overflow-auto p-3">
                   {!activeProject ? (
                     <div className="space-y-2">
-                      <div className="text-sm font-semibold">Welcome to studio Studio</div>
+                      <div className="text-sm font-semibold">Welcome to Studio</div>
                       <div className="text-xs text-muted-foreground">
                         Create or open a project to start chatting with the AI and previewing your app.
                       </div>
@@ -2125,3 +2125,4 @@ const applyDesignChanges = async () => {
   )
 
 }
+

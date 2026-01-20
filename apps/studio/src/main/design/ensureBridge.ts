@@ -20,7 +20,7 @@ const BRIDGE_SOURCE = String.raw`/* studioDesignBridge v5 */
  * Runs inside the previewed Next.js app (in an iframe).
  *
  * Responsibilities:
- * - Tell the parent (studio Studio) when the bridge is ready
+ * - Tell the parent (Studio) when the bridge is ready
  * - Report the current route so the Studio can show a browser-like address bar
  * - (Optional) Inspect mode: hover outline + click-to-select element metadata
  * - Apply quick DOM edits for a smoother UX while source files are being rewritten
@@ -49,20 +49,29 @@ function cssEscape(value: string): string {
   // Prefer the platform escape (widely supported in modern browsers).
   const css = (globalThis as any).CSS
   if (css && typeof css.escape === 'function') return css.escape(value)
-  // Fallback: escape quotes + backslashes (enough for our data-vb-id usage).
+  // Fallback: escape quotes + backslashes (enough for our data-studio-id usage).
   return value.replace(/["\\]/g, '\\$&')
 }
 
-function ensureVbId(el: HTMLElement): string {
-  if (!el.dataset.vbId) {
-    el.dataset.vbId = 'vb_' + Math.random().toString(16).slice(2) + Date.now().toString(16)
+function ensureStudioId(el: HTMLElement): string {
+  // Prefer the new Studio id, but accept legacy vbId if present.
+  const existing = (el as any).dataset?.studioId || (el as any).dataset?.vbId
+  if (existing) {
+    // Mirror legacy id into the new attribute name so future selections use data-studio-id.
+    if (!(el as any).dataset?.studioId) {
+      ;(el as any).dataset.studioId = existing
+    }
+    return (el as any).dataset.studioId
   }
-  return el.dataset.vbId
+
+  const id = 'studio_' + Math.random().toString(16).slice(2) + Date.now().toString(16)
+  ;(el as any).dataset.studioId = id
+  return id
 }
 
 function selectionFromElement(el: HTMLElement): DesignSelection {
-  const id = ensureVbId(el)
-  const selector = '[data-vb-id="' + cssEscape(id) + '"]'
+  const id = ensureStudioId(el)
+  const selector = '[data-studio-id="' + cssEscape(id) + '"]'
   const text = (el.innerText || el.textContent || '').trim()
   const className = (el.getAttribute('class') || '').trim()
   return {
@@ -335,7 +344,7 @@ export default function studioDesignBridge() {
       if (!target) return
 
       if (target === hoverBoxRef.current || target === selectBoxRef.current) return
-      if (target.closest('[data-vb-ignore]')) return
+      if (target.closest('[data-studio-ignore],[data-vb-ignore]')) return
 
       const box = hoverBoxRef.current
       if (!box) return
@@ -352,7 +361,7 @@ export default function studioDesignBridge() {
       const target = e.target as HTMLElement | null
       if (!target) return
       if (target === hoverBoxRef.current || target === selectBoxRef.current) return
-      if (target.closest('[data-vb-ignore]')) return
+      if (target.closest('[data-studio-ignore],[data-vb-ignore]')) return
 
       const selection = selectionFromElement(target)
 
@@ -479,3 +488,4 @@ export async function ensureDesignBridge(projectPath: string): Promise<void> {
     await fs.writeFile(layoutAbs, next, 'utf-8')
   }
 }
+

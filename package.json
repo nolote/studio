@@ -5,7 +5,7 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev:studio": "pnpm --filter @nolote/studio dev",
-    "dev:template-kit": "pnpm --filter @studio/template-kit dev",
+    "dev:template-kit": "pnpm --filter @nolote/studio-template-kit dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",

@@ -1,8 +1,8 @@
 {
-  "name": "@studio/templates",
+  "name": "@nolote/studio-templates",
   "private": true,
   "version": "0.1.0",
-  "description": "studio.ai template gallery (metadata + overlays).",
+  "description": "Studio template gallery (metadata + overlays).",
   "scripts": {
     "lint": "node ./scripts/validate-templates.mjs",
     "typecheck": "echo \"(templates) no TS to typecheck\"",

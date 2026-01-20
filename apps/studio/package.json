@@ -1,9 +1,9 @@
 {
   "name": "@nolote/studio",
   "version": "0.0.0",
-  "description": "studio Studio (Electron + React)",
+  "description": "Studio (Electron + React)",
   "main": "./out/main/index.js",
-  "author": "studio",
+  "author": "Nolote",
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",

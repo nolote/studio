@@ -1,8 +1,8 @@
 {
-  "name": "@studio/preview",
+  "name": "@nolote/studio-preview",
   "version": "0.1.0",
   "private": true,
-  "description": "studio preview runner: starts/stops a Next.js dev server for a generated project and exposes status/logs.",
+  "description": "Studio preview runner: starts/stops a Next.js dev server for a generated project and exposes status/logs.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

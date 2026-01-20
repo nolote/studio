@@ -1,5 +1,5 @@
-appId: com.nolote.studio
-productName: Studio
+appId: com.studio.studio
+productName: studio Studio
 
 directories:
   buildResources: build
@@ -24,7 +24,7 @@ extraResources:
   to: studio/templates
 
 win:
-  executableName: studio
+  executableName: studio-studio
 
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
@@ -44,11 +44,10 @@ linux:
   - AppImage
   - snap
   - deb
-  maintainer: Nolote
+  maintainer: studio.ai
   category: Utility
 
 appImage:
   artifactName: ${name}-${version}.${ext}
 
 npmRebuild: false
-

@@ -16,8 +16,8 @@ const geistMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "studio Preview",
-  description: "studio generated preview app",
+  title: "Studio Preview",
+  description: "Studio generated preview app",
 };
 
 export default function RootLayout({
@@ -34,4 +34,5 @@ export default function RootLayout({
     </html>
   );
 }
+
 

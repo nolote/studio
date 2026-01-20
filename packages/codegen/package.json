@@ -1,8 +1,8 @@
 {
-  "name": "@studio/codegen",
+  "name": "@nolote/studio-codegen",
   "version": "0.1.0",
   "private": true,
-  "description": "studio codegen: parse AI response into file writes, formatting, and dependency install.",
+  "description": "Studio codegen: parse AI response into file writes, formatting, and dependency install.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

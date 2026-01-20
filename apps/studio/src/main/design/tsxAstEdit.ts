@@ -9,12 +9,12 @@ import * as t from "@babel/types";
  * Milestone 4: Robust DOM -> JSX mapping + edit application.
  *
  * Strategy:
- * 1) Prefer stable `data-vb-id` (vbId) to locate the JSXOpeningElement attribute.
+ * 1) Prefer stable `data-studio-id` (studioId) (also accepts legacy data-vb-id) to locate the JSXOpeningElement attribute.
  * 2) Fallback: domPath suffix matching (tag + nth-of-type) as a heuristic.
  * 3) Only edit:
  *    - text content (JSXText / JSXExpressionContainer string literal)
  *    - className (string literal)
- *    - data-vb-id insertion (to stabilize future selections)
+ *    - data-studio-id insertion (to stabilize future selections)
  *
  * NOTE: This is intentionally conservative. If we cannot find a safe edit target,
  * we return a structured error instead of guessing.
@@ -23,6 +23,8 @@ import * as t from "@babel/types";
 export type DomPathStep = { tag: string; nth: number };
 
 export type DesignSelection = {
+  studioId?: string | null;
+  /** Legacy id inserted by older builds (data-vb-id). */
   vbId?: string | null;
   tag?: string | null;
   domPath?: DomPathStep[] | null;
@@ -51,7 +53,7 @@ export type ApplyAstEditInput = {
 };
 
 export type ApplyAstEditResult =
-  | { ok: true; before: string; after: string; changed: boolean; matchedBy: "vbId" | "domPath" }
+  | { ok: true; before: string; after: string; changed: boolean; matchedBy: "studioId" | "domPath" }
   | { ok: false; error: string };
 
 function parseTsx(code: string) {
@@ -129,18 +131,29 @@ function applyTailwindPatch(existing: string, patch: TailwindClassPatch): string
 
 type MatchCandidate = {
   opening: t.JSXOpeningElement;
-  matchedBy: "vbId" | "domPath";
+  matchedBy: "studioId" | "domPath";
 };
 
-function matchByVbId(ast: t.File, vbId: string): MatchCandidate | null {
+function matchByStudioId(ast: t.File, studioId: string): MatchCandidate | null {
   let found: t.JSXOpeningElement | null = null;
 
   traverse(ast, {
     JSXOpeningElement(p) {
       if (found) return;
-      const attr = getAttr(p.node, "data-vb-id");
-      const v = getStringAttrValue(attr);
-      if (v === vbId) {
+
+      // Prefer new attribute
+      const attrNew = getAttr(p.node, "data-studio-id");
+      const vNew = getStringAttrValue(attrNew);
+      if (vNew === studioId) {
+        found = p.node;
+        p.stop();
+        return;
+      }
+
+      // Back-compat: legacy attribute
+      const attrLegacy = getAttr(p.node, "data-vb-id");
+      const vLegacy = getStringAttrValue(attrLegacy);
+      if (vLegacy === studioId) {
         found = p.node;
         p.stop();
       }
@@ -148,7 +161,7 @@ function matchByVbId(ast: t.File, vbId: string): MatchCandidate | null {
   });
 
   if (!found) return null;
-  return { opening: found, matchedBy: "vbId" };
+  return { opening: found, matchedBy: "studioId" };
 }
 
 /**
@@ -228,10 +241,11 @@ function matchByDomPath(ast: t.File, domPath: DomPathStep[]): MatchCandidate | n
   return { opening: best.node, matchedBy: "domPath" };
 }
 
-function ensureVbId(opening: t.JSXOpeningElement, vbId: string) {
-  const existing = getStringAttrValue(getAttr(opening, "data-vb-id"));
-  if (existing === vbId) return;
-  setStringAttrValue(opening, "data-vb-id", vbId);
+function ensureStudioId(opening: t.JSXOpeningElement, studioId: string) {
+  // Write the new attribute name. We don't delete legacy data-vb-id.
+  const existing = getStringAttrValue(getAttr(opening, "data-studio-id"));
+  if (existing === studioId) return;
+  setStringAttrValue(opening, "data-studio-id", studioId);
 }
 
 function updateTextInElement(el: t.JSXElement, newText: string): boolean {
@@ -269,12 +283,12 @@ export async function applyAstEdit(input: ApplyAstEditInput): Promise<ApplyAstEd
     return { ok: false, error: `TSX parse failed for ${path.basename(filePathAbs)}: ${e?.message ?? e}` };
   }
 
-  const vbId = (selection.vbId ?? "").trim() || null;
+  const studioId = (selection.studioId ?? selection.vbId ?? "").trim() || null;
   const domPath = normalizeSteps(selection.domPath);
 
   let match: MatchCandidate | null = null;
 
-  if (vbId) match = matchByVbId(ast, vbId);
+  if (studioId) match = matchByStudioId(ast, studioId);
   if (!match && domPath.length) match = matchByDomPath(ast, domPath);
 
   if (!match) {
@@ -298,7 +312,7 @@ export async function applyAstEdit(input: ApplyAstEditInput): Promise<ApplyAstEd
   }
 
   // Ensure stable id is present if provided.
-  if (vbId) ensureVbId(match.opening, vbId);
+  if (studioId) ensureStudioId(match.opening, studioId);
 
   let changed = false;
 
@@ -321,3 +335,4 @@ export async function applyAstEdit(input: ApplyAstEditInput): Promise<ApplyAstEd
 
   return { ok: true, before, after, changed, matchedBy: match.matchedBy };
 }
+

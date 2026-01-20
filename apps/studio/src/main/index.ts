@@ -883,7 +883,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.studio')
+  electronApp.setAppUserModelId('com.nolote.studio')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -1225,5 +1225,6 @@ ipcMain.handle('dialog:selectDirectory', async (_evt, opts?: { defaultPath?: str
   if (result.canceled) return null
   return result.filePaths[0] ?? null
 })
+
 
 
