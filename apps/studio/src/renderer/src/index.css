@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark theme - Office/VS Code inspired */
+  --background: #1e1e1e;
+  --foreground: #d4d4d4;
+  --card: #252526;
+  --card-foreground: #d4d4d4;
+  --popover: #2d2d2d;
+  --popover-foreground: #d4d4d4;
+  --primary: #0078d4;
+  --primary-foreground: #ffffff;
+  --secondary: #3c3c3c;
+  --secondary-foreground: #d4d4d4;
+  --muted: #2d2d2d;
+  --muted-foreground: #808080;
+  --accent: #0078d4;
+  --accent-foreground: #ffffff;
+  --destructive: #f14c4c;
+  --destructive-foreground: #ffffff;
+  --border: #3c3c3c;
+  --input: #3c3c3c;
+  --ring: #0078d4;
+  --radius: 0rem;
+
+  /* Custom tokens for Studio */
+  --titlebar-bg: #323233;
+  --toolbar-bg: #252526;
+  --pane-bg: #1e1e1e;
+  --selected-bg: #094771;
+  --hover-bg: #2a2d2e;
+  --active-border: #0078d4;
+  --success: #4ec9b0;
+  --warning: #cca700;
+  --error: #f14c4c;
+  --info: #3794ff;
+}
+
+html {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Custom scrollbar - dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #5a5a5a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6a6a6a;
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--background);
+}
+
+/* Focus ring - square, no rounded corners */
+*:focus-visible {
+  outline: 1px solid var(--primary);
+  outline-offset: -1px;
+}
+
+/* Selection */
+::selection {
+  background: var(--selected-bg);
+  color: var(--foreground);
+}
+
+/* Performance helpers */
+.contain-layout {
+  contain: layout;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+.contain-paint {
+  contain: paint;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
