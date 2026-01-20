@@ -1,58 +1,54 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { PreviewHome, type PreviewHomeItem } from './PreviewHome';
+import React, { useEffect, useMemo, useState } from 'react'
+import { PreviewHome, type PreviewHomeItem } from './PreviewHome'
 
 export type PreviewBrowserProps = {
   /** When true, show the "Pages" home listing instead of the iframe */
-  isHome: boolean;
+  isHome: boolean
 
   /** Full iframe src (including origin). Required when isHome=false */
-  iframeSrc?: string | null;
+  iframeSrc?: string | null
 
   /** Force iframe reload by changing the key */
-  iframeKey?: number | string;
+  iframeKey?: number | string
 
   /** Current pathname (e.g. "/", "/about") */
-  address: string;
+  address: string
 
   /** Routes used for the home listing */
-  routes?: string[];
+  routes?: string[]
 
   /** Browser navigation state */
-  canBack: boolean;
-  canForward: boolean;
+  canBack: boolean
+  canForward: boolean
 
   /** Browser actions */
-  onHome: () => void;
-  onBack: () => void;
-  onForward: () => void;
-  onNavigate: (route: string) => void;
-  onReload: () => void;
+  onHome: () => void
+  onBack: () => void
+  onForward: () => void
+  onNavigate: (route: string) => void
+  onReload: () => void
 
   /** Optional right-side controls from the host app (Restart, Inspect, Stop, etc.) */
-  rightActions?: React.ReactNode;
+  rightActions?: React.ReactNode
 
   /** Optional home listing content */
-  homeTitle?: string;
-  homeSubtitle?: string;
-};
+  homeTitle?: string
+  homeSubtitle?: string
+}
 
 function normalizeRoute(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) return '/';
+  const trimmed = input.trim()
+  if (!trimmed) return '/'
 
-  // Allow pasting a full URL (we'll extract just the pathname + search + hash).
   if (/^https?:\/\//i.test(trimmed)) {
     try {
-      const url = new URL(trimmed);
-      return `${url.pathname || '/'}${url.search || ''}${url.hash || ''}`;
-    } catch {
-      // Fall through
-    }
+      const url = new URL(trimmed)
+      return `${url.pathname || '/'}${url.search || ''}${url.hash || ''}`
+    } catch {}
   }
 
-  // If user enters something like "about", normalize to "/about".
-  if (!trimmed.startsWith('/')) return `/${trimmed}`;
-  return trimmed;
+  if (!trimmed.startsWith('/')) return `/${trimmed}`
+  return trimmed
 }
 
 export function PreviewBrowser(props: PreviewBrowserProps) {
@@ -71,24 +67,24 @@ export function PreviewBrowser(props: PreviewBrowserProps) {
     onReload,
     rightActions,
     homeTitle,
-    homeSubtitle,
-  } = props;
+    homeSubtitle
+  } = props
 
-  const [input, setInput] = useState(isHome ? '' : address);
+  const [input, setInput] = useState(isHome ? '' : address)
 
   useEffect(() => {
-    setInput(isHome ? '' : address);
-  }, [isHome, address]);
+    setInput(isHome ? '' : address)
+  }, [isHome, address])
 
   const homeItems: PreviewHomeItem[] = useMemo(() => {
-    const unique = Array.from(new Set(routes));
+    const unique = Array.from(new Set(routes))
     unique.sort((a, b) => {
-      if (a === '/') return -1;
-      if (b === '/') return 1;
-      return a.localeCompare(b);
-    });
-    return unique.map((route) => ({ route }));
-  }, [routes]);
+      if (a === '/') return -1
+      if (b === '/') return 1
+      return a.localeCompare(b)
+    })
+    return unique.map((route) => ({ route }))
+  }, [routes])
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -127,9 +123,9 @@ export function PreviewBrowser(props: PreviewBrowserProps) {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              const route = normalizeRoute(input);
-              onNavigate(route);
+              e.preventDefault()
+              const route = normalizeRoute(input)
+              onNavigate(route)
             }
           }}
           className="ml-1 w-full min-w-[220px] max-w-[720px] flex-1 rounded border border-zinc-200 bg-white px-2 py-1 text-xs"
@@ -147,7 +143,9 @@ export function PreviewBrowser(props: PreviewBrowserProps) {
           Reload
         </button>
 
-        {rightActions ? <div className="ml-auto flex items-center gap-2">{rightActions}</div> : null}
+        {rightActions ? (
+          <div className="ml-auto flex items-center gap-2">{rightActions}</div>
+        ) : null}
       </div>
 
       {/* Content */}
@@ -178,5 +176,5 @@ export function PreviewBrowser(props: PreviewBrowserProps) {
         {isHome ? 'Home' : address}
       </div>
     </div>
-  );
+  )
 }

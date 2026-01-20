@@ -10,8 +10,10 @@ function cx(...classes: Array<string | undefined | null | false>) {
  * Minimal ScrollArea implementation (no Radix dependency).
  * Provides a predictable `overflow-auto` container.
  */
-export const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(({ className, ...props }, ref) => {
-  return <div ref={ref} className={cx('relative overflow-auto', className)} {...props} />
-})
+export const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
+  ({ className, ...props }, ref) => {
+    return <div ref={ref} className={cx('relative overflow-auto', className)} {...props} />
+  }
+)
 
 ScrollArea.displayName = 'ScrollArea'

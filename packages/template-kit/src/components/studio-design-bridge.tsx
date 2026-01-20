@@ -22,21 +22,30 @@ type DesignSelection = {
 type ParentMessage =
   | { kind: "studio:design"; type: "ping" }
   | { kind: "studio:design"; type: "enable"; enabled: boolean }
-  | { kind: "studio:design"; type: "apply"; selector: string; newText?: string; newClassName?: string }
+  | {
+      kind: "studio:design";
+      type: "apply";
+      selector: string;
+      newText?: string;
+      newClassName?: string;
+    }
   | { kind: "studio:design"; type: "navigate"; route: string }
-  | { kind: "studio:design"; type: "nav"; action: "back" | "forward" | "reload" };
+  | {
+      kind: "studio:design";
+      type: "nav";
+      action: "back" | "forward" | "reload";
+    };
 
 function cssEscape(value: string): string {
-  // Prefer the platform escape (widely supported in modern browsers).
   const css = (globalThis as any).CSS;
   if (css && typeof css.escape === "function") return css.escape(value);
-  // Fallback: escape quotes + backslashes (enough for our data-vb-id usage).
   return value.replace(/["\\]/g, "\\$&");
 }
 
 function ensureVbId(el: HTMLElement): string {
   if (!el.dataset.vbId) {
-    el.dataset.vbId = "vb_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    el.dataset.vbId =
+      "vb_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
   }
   return el.dataset.vbId;
 }
@@ -57,13 +66,13 @@ function selectionFromElement(el: HTMLElement): DesignSelection {
 function postToParent(msg: any) {
   try {
     window.parent?.postMessage(msg, "*");
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 function currentRoute(): string {
-  return window.location.pathname + window.location.search + window.location.hash;
+  return (
+    window.location.pathname + window.location.search + window.location.hash
+  );
 }
 
 export default function studioDesignBridge() {
@@ -82,22 +91,23 @@ export default function studioDesignBridge() {
   }
 
   function notifyRoute() {
-    postToParent({ kind: "studio:design", type: "route", route: currentRoute() });
+    postToParent({
+      kind: "studio:design",
+      type: "route",
+      route: currentRoute(),
+    });
   }
 
-  // Boot + keep the parent informed of route changes.
   useEffect(() => {
     postToParent({ kind: "studio:design", type: "ready" });
     notifyRoute();
 
-    // Monkey-patch history so SPA navigations still report routes.
     const origPush = history.pushState;
     const origReplace = history.replaceState;
 
     function wrap(fn: typeof history.pushState) {
       return function (this: any, ...args: any[]) {
         const res = fn.apply(this, args as any);
-        // defer to let router finish updating location
         setTimeout(notifyRoute, 0);
         return res;
       } as any;
@@ -106,9 +116,7 @@ export default function studioDesignBridge() {
     try {
       history.pushState = wrap(origPush);
       history.replaceState = wrap(origReplace);
-    } catch {
-      // ignore if read-only
-    }
+    } catch {}
 
     window.addEventListener("popstate", notifyRoute);
     window.addEventListener("hashchange", notifyRoute);
@@ -117,16 +125,12 @@ export default function studioDesignBridge() {
       try {
         history.pushState = origPush;
         history.replaceState = origReplace;
-      } catch {
-        // ignore
-      }
+      } catch {}
       window.removeEventListener("popstate", notifyRoute);
       window.removeEventListener("hashchange", notifyRoute);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Message handling from Studio.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
       const data = e.data as ParentMessage | any;
@@ -145,7 +149,8 @@ export default function studioDesignBridge() {
       }
 
       if (data.type === "apply") {
-        const selector = typeof data.selector === "string" ? data.selector : null;
+        const selector =
+          typeof data.selector === "string" ? data.selector : null;
         if (!selector) return;
         const el = document.querySelector(selector) as HTMLElement | null;
         if (!el) return;
@@ -162,17 +167,18 @@ export default function studioDesignBridge() {
       if (data.type === "navigate") {
         const route = typeof data.route === "string" ? data.route : "/";
         try {
-          // Allow either a path (/about) or a full URL.
-          if (route.startsWith("http://") || route.startsWith("https://") || route.startsWith("//")) {
+          if (
+            route.startsWith("http://") ||
+            route.startsWith("https://") ||
+            route.startsWith("//")
+          ) {
             window.location.assign(route);
           } else {
             const raw = route.trim() || "/";
             const next = raw.startsWith("/") ? raw : `/${raw}`;
             window.location.assign(next);
           }
-        } catch {
-          // ignore
-        }
+        } catch {}
         return;
       }
 
@@ -182,19 +188,15 @@ export default function studioDesignBridge() {
           if (action === "back") history.back();
           if (action === "forward") history.forward();
           if (action === "reload") window.location.reload();
-        } catch {
-          // ignore
-        }
+        } catch {}
         return;
       }
     }
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Create overlays once.
   useEffect(() => {
     if (!hoverBoxRef.current) {
       const d = document.createElement("div");
@@ -220,7 +222,6 @@ export default function studioDesignBridge() {
     }
   }, []);
 
-  // Inspect mode listeners.
   useEffect(() => {
     if (!enabled) {
       if (hoverBoxRef.current) hoverBoxRef.current.style.display = "none";
@@ -232,7 +233,8 @@ export default function studioDesignBridge() {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      if (target === hoverBoxRef.current || target === selectBoxRef.current) return;
+      if (target === hoverBoxRef.current || target === selectBoxRef.current)
+        return;
       if (target.closest("[data-vb-ignore]")) return;
 
       const box = hoverBoxRef.current;
@@ -243,18 +245,17 @@ export default function studioDesignBridge() {
     function onClick(e: MouseEvent) {
       if (!enabled) return;
 
-      // While inspect is enabled, prevent navigation and let the user select.
       e.preventDefault();
       e.stopPropagation();
 
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (target === hoverBoxRef.current || target === selectBoxRef.current) return;
+      if (target === hoverBoxRef.current || target === selectBoxRef.current)
+        return;
       if (target.closest("[data-vb-ignore]")) return;
 
       const selection = selectionFromElement(target);
 
-      // lock selection outline
       if (selectBoxRef.current) updateBox(selectBoxRef.current, target);
 
       postToParent({ kind: "studio:design", type: "selected", selection });

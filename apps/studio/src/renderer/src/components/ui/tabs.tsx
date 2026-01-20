@@ -23,7 +23,14 @@ export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
   onValueChange?: (value: string) => void
 }
 
-export function Tabs({ value, defaultValue, onValueChange, className, children, ...props }: TabsProps) {
+export function Tabs({
+  value,
+  defaultValue,
+  onValueChange,
+  className,
+  children,
+  ...props
+}: TabsProps) {
   const [internal, setInternal] = React.useState(defaultValue ?? '')
   const isControlled = value != null
   const current = isControlled ? (value as string) : internal
@@ -47,18 +54,20 @@ export function Tabs({ value, defaultValue, onValueChange, className, children, 
 
 export interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className={cx(
-        'inline-flex h-10 items-center justify-center rounded-md bg-zinc-100 p-1 text-zinc-600',
-        className
-      )}
-      {...props}
-    />
-  )
-})
+export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cx(
+          'inline-flex h-10 items-center justify-center rounded-md bg-zinc-100 p-1 text-zinc-600',
+          className
+        )}
+        {...props}
+      />
+    )
+  }
+)
 
 TabsList.displayName = 'TabsList'
 
@@ -104,12 +113,7 @@ export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
     if (ctx.value !== value) return null
 
     return (
-      <div
-        ref={ref}
-        role="tabpanel"
-        className={cx('mt-2 w-full', className)}
-        {...props}
-      >
+      <div ref={ref} role="tabpanel" className={cx('mt-2 w-full', className)} {...props}>
         {children}
       </div>
     )

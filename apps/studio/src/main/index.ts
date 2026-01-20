@@ -22,18 +22,16 @@ import type {
   DesignApplyResult
 } from '../shared/types'
 
-// Milestone 2 modules (kept in packages/, imported as source to avoid build-order friction in dev)
-import { createAIEngine, type ChatMessage as EngineChatMessage } from '../../../../packages/engine/src/index'
+import {
+  createAIEngine,
+  type ChatMessage as EngineChatMessage
+} from '../../../../packages/engine/src/index'
 import { parseAiResponse, applyChanges } from '../../../../packages/codegen/src/index'
 import { createPreviewManager } from '../../../../packages/preview/src/index'
 import { ensureDesignBridge } from './design/ensureBridge'
 
-/**
- * Load .env (in dev, this will pick up apps/studio/.env).
- */
 dotenv.config()
 
-// Milestone 3: Preview server manager (Next.js dev server runner)
 const previewManager = createPreviewManager()
 
 const PROJECT_META_PATH = path.join('.studio', 'project.json')
@@ -44,9 +42,6 @@ const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json')
 const SKIP_TREE_NAMES = new Set(['node_modules', '.next', '.git', '.studio', 'dist', 'out'])
 const SKIP_COPY_NAMES = new Set(['node_modules', '.next', '.git', '.DS_Store', 'dist', 'out'])
 
-/**
- * AbortControllers for in-flight AI runs (for cancel button).
- */
 const aiRuns = new Map<string, AbortController>()
 
 function firstEnv(names: string[]): string | undefined {
@@ -74,8 +69,6 @@ function findRepoRoot(startDir: string): string {
   return startDir
 }
 
-// Resolve the repo root relative to this file instead of process.cwd().
-// In packaged builds, process.cwd() can point to an arbitrary directory.
 const THIS_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = findRepoRoot(THIS_DIR)
 
@@ -83,11 +76,12 @@ function resolvePathSmart(p: string): string[] {
   if (!p) return []
   if (path.isAbsolute(p)) return [p]
 
-  // Try a few common bases:
-  // - package cwd (apps/studio)
-  // - repo root
-  // - one and two levels above cwd (often where pnpm/turbo is executed from)
-  const bases = [process.cwd(), path.resolve(process.cwd(), '..'), path.resolve(process.cwd(), '../..'), REPO_ROOT]
+  const bases = [
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    path.resolve(process.cwd(), '../..'),
+    REPO_ROOT
+  ]
   const out: string[] = []
   for (const base of bases) {
     out.push(path.resolve(base, p))
@@ -106,32 +100,31 @@ function envPathAny(names: string[]): string | undefined {
 }
 
 function defaultProjectsRoot(): string {
-  // Prefer explicit env if provided
   const p = envPathAny(['studio_PROJECTS_ROOT', 'studio_PROJECTS_ROOT', 'LOCALFORGE_PROJECTS_ROOT'])
   if (p) return p
   return path.join(os.homedir(), 'studioProjects')
 }
 
 function packagedAssetsRoot(): string {
-  // electron-builder places extraResources under process.resourcesPath
-  // (e.g. <App>/resources on Windows/Linux, <App>.app/Contents/Resources on macOS).
   return path.join(process.resourcesPath, 'studio')
 }
 
 function templatesRoot(): string {
-  const env = envPathAny(['studio_TEMPLATES_PATH', 'studio_TEMPLATES_PATH', 'LOCALFORGE_TEMPLATES_PATH'])
+  const env = envPathAny([
+    'studio_TEMPLATES_PATH',
+    'studio_TEMPLATES_PATH',
+    'LOCALFORGE_TEMPLATES_PATH'
+  ])
   if (env) return env
 
   if (app.isPackaged) {
-    // Prefer packaged copies (added via electron-builder extraResources).
     const candidates = [
       path.join(packagedAssetsRoot(), 'templates'),
-      path.join(process.resourcesPath, 'templates'),
+      path.join(process.resourcesPath, 'templates')
     ]
     for (const c of candidates) {
       if (fssync.existsSync(c)) return c
     }
-    // Return the most likely path to improve downstream error messages.
     return candidates[0]
   }
 
@@ -142,14 +135,14 @@ function templateKitRoot(): string {
   const env = envPathAny([
     'studio_TEMPLATE_KIT_PATH',
     'studio_TEMPLATE_KIT_PATH',
-    'LOCALFORGE_TEMPLATE_KIT_PATH',
+    'LOCALFORGE_TEMPLATE_KIT_PATH'
   ])
   if (env) return env
 
   if (app.isPackaged) {
     const candidates = [
       path.join(packagedAssetsRoot(), 'template-kit'),
-      path.join(process.resourcesPath, 'template-kit'),
+      path.join(process.resourcesPath, 'template-kit')
     ]
     for (const c of candidates) {
       if (fssync.existsSync(c)) return c
@@ -167,10 +160,9 @@ async function ensureDir(dir: string) {
 function sanitizeFolderName(name: string): string {
   const trimmed = (name ?? '').trim()
   const base = trimmed.length ? trimmed : 'Untitled'
-  // Prevent path traversal / separators & keep it reasonably filesystem-friendly
   return base
-    .replace(/[\\\/\0]/g, '-') // path separators and NUL
-    .replace(/[:*?"<>|]/g, '-') // Windows-illegal chars (also safe on macOS)
+    .replace(/[\\\/\0]/g, '-')
+    .replace(/[:*?"<>|]/g, '-')
     .trim()
     .slice(0, 80)
 }
@@ -194,7 +186,6 @@ async function writeJsonAtomic(filePath: string, data: unknown) {
 async function loadSettings(): Promise<AppSettings> {
   const existing = await readJson<AppSettings>(SETTINGS_PATH)
   if (existing) {
-    // Normalize envVars to an array (older builds stored Record<string,string>)
     const anySettings = existing as any
     if (anySettings.envVars && !Array.isArray(anySettings.envVars)) {
       const pairs = Object.entries(anySettings.envVars).map(([key, value]) => ({
@@ -234,17 +225,12 @@ async function loadTemplatesIndex(): Promise<TemplateSummary[]> {
   const root = templatesRoot()
   const indexPath = path.join(root, 'templates.index.json')
 
-  // In packaged builds, templates are bundled via electron-builder `extraResources`.
-  // If they are missing (misconfigured build or a stripped dev checkout), don't crash the app.
   if (!fssync.existsSync(root) || !fssync.existsSync(indexPath)) {
     return []
   }
 
   const data = await readJson<any>(indexPath)
 
-  // Support both formats:
-  // 1) Array of templates: [ { id, name, ... } ]
-  // 2) Wrapped object: { templates: [ ... ] }
   if (Array.isArray(data)) return data as TemplateSummary[]
   if (data && Array.isArray(data.templates)) return data.templates as TemplateSummary[]
 
@@ -297,7 +283,6 @@ async function listProjects(): Promise<ProjectSummary[]> {
     })
   }
 
-  // newest first when createdAt is available
   out.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
   return out
 }
@@ -338,7 +323,9 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
     const t = templates.find((x) => x.id === templateId)
     if (!t) throw new Error(`Template not found: ${templateId}`)
 
-    const overlayPath = path.isAbsolute(t.overlayDir) ? t.overlayDir : path.join(templatesRootAbs, t.overlayDir)
+    const overlayPath = path.isAbsolute(t.overlayDir)
+      ? t.overlayDir
+      : path.join(templatesRootAbs, t.overlayDir)
     if (!fssync.existsSync(overlayPath)) {
       throw new Error(`Overlay directory not found for template '${templateId}': ${overlayPath}`)
     }
@@ -376,7 +363,6 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
     const stat = await fs.stat(projectPath)
     const createdAt = stat.birthtime?.toISOString?.() ?? new Date().toISOString()
 
-    // If it already has meta, just return it
     const meta = await readJson<any>(metaPath)
     if (meta) {
       await writeMetaAndChatIfMissing(projectPath, meta.createdAt ?? createdAt)
@@ -388,8 +374,6 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
       }
     }
 
-    // If the folder exists but doesn't look like a Next.js project yet, we can "repair" it
-    // ONLY when it's empty-ish (so we don't overwrite user data).
     const pkgPath = path.join(projectPath, 'package.json')
     const hasPkg = fssync.existsSync(pkgPath)
 
@@ -408,7 +392,6 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
       }
     }
 
-    // Otherwise: adopt the folder as a studio project by writing meta (without touching files)
     await writeMetaAndChatIfMissing(projectPath, createdAt)
     const adoptedMeta = await readJson<any>(metaPath)
 
@@ -420,7 +403,6 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
     }
   }
 
-  // Target folder path (default behavior is "open existing" rather than error)
   let projectPath = path.join(projectsRoot, folderBase)
 
   if (fssync.existsSync(projectPath)) {
@@ -429,7 +411,6 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
       return await openOrAdoptExistingProject(projectPath)
     }
 
-    // It's a file (or something odd) -> create a unique folder name
     let n = 2
     while (fssync.existsSync(projectPath)) {
       projectPath = path.join(projectsRoot, `${folderBase}-${n}`)
@@ -437,13 +418,10 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
     }
   }
 
-  // 1) Copy template kit scaffold
   await copyDir(kitPath, projectPath)
 
-  // 2) Apply template overlay (optional)
   await applyTemplateOverlay(projectPath)
 
-  // 3) Write project metadata
   const createdAt = new Date().toISOString()
   const meta = {
     name: displayName,
@@ -461,14 +439,10 @@ async function createProject(req: CreateProjectRequest): Promise<ProjectSummary>
   const metaPath = path.join(projectPath, PROJECT_META_PATH)
   await writeJsonAtomic(metaPath, meta)
 
-  // 4) Create chat history file
   const chatPath = path.join(projectPath, CHAT_HISTORY_PATH)
   await writeJsonAtomic(chatPath, [])
 
-  // 5) Optionally init git
   if (req.initGit) {
-    // No-op for now (Milestone 1 already had this stub).
-    // You can add: spawn('git', ['init'], { cwd: projectPath }) in Milestone 3/4.
   }
 
   return { name: displayName, path: projectPath, createdAt, templateId }
@@ -525,8 +499,8 @@ function buildSystemPrompt(): string {
     '- Prefer functional React components.',
     '- Do NOT use next/router or next/head in app/ (use next/navigation and metadata export instead).',
     "- If you use React hooks or next/navigation hooks, add a correct client directive: 'use client' (with quotes).",
-    "- IMPORTANT: Never export metadata/generateMetadata from a file that has \"use client\". If you need client interactivity, keep metadata in src/app/layout.tsx or a server wrapper page that imports a Client Component.",
-    "- Prefer Server Components for app/page.tsx; put hooks/handlers in small child components marked with \"use client\".",
+    '- IMPORTANT: Never export metadata/generateMetadata from a file that has "use client". If you need client interactivity, keep metadata in src/app/layout.tsx or a server wrapper page that imports a Client Component.',
+    '- Prefer Server Components for app/page.tsx; put hooks/handlers in small child components marked with "use client".',
     '- Prefer Tailwind classes in JSX. Avoid CSS modules with @apply unless absolutely necessary.',
     '- Output MUST be parseable by the app.',
     '',
@@ -547,12 +521,11 @@ function buildSystemPrompt(): string {
     '- Use relative paths only. Do NOT use absolute paths.',
     '- Do NOT output lists like "✅ Updated files:". Only use File blocks.',
     '- Do NOT include prose inside code fences.',
-    "- If the user is asking for changes, ALWAYS output at least one File block (even if minimal). Only omit File blocks if the user is clearly asking a non-code question."
+    '- If the user is asking for changes, ALWAYS output at least one File block (even if minimal). Only omit File blocks if the user is clearly asking a non-code question.'
   ].join('\n')
 }
 
 async function buildFileTreeContext(projectPath: string): Promise<string> {
-  // Provide a lightweight file list so the model can pick correct paths.
   const maxFiles = 250
   const out: string[] = []
 
@@ -588,20 +561,24 @@ function parseLocalModel(raw: string | undefined): { provider: 'ollama'; model: 
     const model = parts.slice(1).join(':').trim()
     if (provider === 'ollama' && model) return { provider: 'ollama', model }
   }
-  // If no provider prefix, assume ollama model name
+
   return { provider: 'ollama', model: v }
 }
 
 function looksLikeCodeChangePrompt(prompt: string): boolean {
   const p = (prompt ?? '').toLowerCase()
-  // heuristics: the Studio is primarily a code generator/editor, so bias toward applying edits.
-  return /\b(fix|debug|repair|implement|add|create|update|modify|refactor|change|generate|scaffold|design|make)\b/.test(p)
+  return /\b(fix|debug|repair|implement|add|create|update|modify|refactor|change|generate|scaffold|design|make)\b/.test(
+    p
+  )
 }
 
 type FileHint = { relPath: string; line?: number }
 
 function normalizeCandidatePath(projectPath: string, rawPath: string): string | null {
-  const cleaned = rawPath.replace(/\\/g, '/').replace(/^\.?\//, '').trim()
+  const cleaned = rawPath
+    .replace(/\\/g, '/')
+    .replace(/^\.?\//, '')
+    .trim()
   if (!cleaned) return null
 
   const isAbs = path.isAbsolute(cleaned) || /^[A-Za-z]:\//.test(cleaned)
@@ -622,7 +599,6 @@ function extractFileHintsFromText(projectPath: string, text: string): FileHint[]
   const seen = new Set<string>()
   const src = text ?? ''
 
-  // Common Next.js compiler format: -[/abs/path/to/file.tsx:33:1]
   const reBrackets = /-\[([^\]:\n]+?\.(?:tsx|ts|jsx|js|json|css|mjs|cjs)):(\d+):(\d+)\]/g
   let m: RegExpExecArray | null
   while ((m = reBrackets.exec(src))) {
@@ -638,8 +614,8 @@ function extractFileHintsFromText(projectPath: string, text: string): FileHint[]
   }
 
   if (out.length < 4) {
-    // Generic: src/.../file.tsx, app/.../page.tsx, etc.
-    const reGeneric = /(^|\s)(\.?\/?(?:src|app|pages|components|lib|styles)[^\s'"\]]+?\.(?:tsx|ts|jsx|js|json|css|mjs|cjs))/gm
+    const reGeneric =
+      /(^|\s)(\.?\/?(?:src|app|pages|components|lib|styles)[^\s'"\]]+?\.(?:tsx|ts|jsx|js|json|css|mjs|cjs))/gm
     while ((m = reGeneric.exec(src))) {
       const rel = normalizeCandidatePath(projectPath, m[2])
       if (!rel || seen.has(rel)) continue
@@ -676,19 +652,14 @@ async function buildFileContentContext(projectPath: string, prompt: string): Pro
       if (lines.length > 220) snippet += `\n// ... (${lines.length - 220} more lines)`
     }
 
-    // Cap to avoid huge prompts.
     if (snippet.length > 14000) snippet = snippet.slice(0, 14000) + '\n// ... (truncated)'
 
     const ext = (h.relPath.split('.').pop() || 'txt').toLowerCase()
     const lang = ['ts', 'tsx', 'js', 'jsx', 'json', 'css', 'mjs', 'cjs'].includes(ext) ? ext : 'txt'
 
-    blocks.push([
-      `Context file (read-only): ${h.relPath}`,
-      '```' + lang,
-      snippet,
-      '```',
-      ''
-    ].join('\n'))
+    blocks.push(
+      [`Context file (read-only): ${h.relPath}`, '```' + lang, snippet, '```', ''].join('\n')
+    )
   }
 
   if (blocks.length === 0) return ''
@@ -704,7 +675,6 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
   const settings = await loadSettings()
   const projectPath = req.projectPath
 
-  // Basic existence check
   if (!fssync.existsSync(projectPath)) {
     throw new Error(`Project path not found: ${projectPath}`)
   }
@@ -720,7 +690,6 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
   const ac = new AbortController()
   aiRuns.set(requestId, ac)
 
-  // Basic timeout guard (prevents hung requests)
   const timeoutMs = 3 * 60 * 1000
   const timeout = setTimeout(() => ac.abort(), timeoutMs)
 
@@ -738,7 +707,6 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
 
     const nextChat = [...chat, userMsg]
 
-    // Build provider engine
     const engine =
       aiMode === 'cloud'
         ? (() => {
@@ -755,7 +723,9 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
           })()
         : (() => {
             const { model } = parseLocalModel(localModelRaw)
-            const baseUrl = firstEnv(['studio_OLLAMA_BASE_URL', 'studio_OLLAMA_BASE_URL']) ?? 'http://localhost:11434'
+            const baseUrl =
+              firstEnv(['studio_OLLAMA_BASE_URL', 'studio_OLLAMA_BASE_URL']) ??
+              'http://localhost:11434'
             return createAIEngine({
               provider: 'ollama',
               ollama: { baseUrl, model, temperature: 0.2 }
@@ -773,8 +743,6 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
 
     const requireChanges = (req as any).requireFileChanges ?? looksLikeCodeChangePrompt(req.prompt)
 
-    // Some models (especially local) sometimes ignore the required output format.
-    // If we expect changes and the response has no File blocks and no Dependencies, ask again.
     let attemptMessages = baseMessages
     let text = ''
     let parsed = { summary: '', files: [], dependencies: [], raw: '' } as any
@@ -788,7 +756,6 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
       const hasEdits = (parsed.files?.length ?? 0) > 0 || (parsed.dependencies?.length ?? 0) > 0
       if (!requireChanges || hasEdits) break
 
-      // Nudge: the model must output file blocks.
       attemptMessages = [
         ...attemptMessages,
         { role: 'assistant', content: text },
@@ -799,19 +766,18 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
             'Please try again and strictly follow the required output format.',
             '',
             'You MUST output at least one File: ... code block (full file contents) and/or a Dependencies: [...] line.',
-            'Do not output bullet lists like "✅ Updated files:". Only use File blocks + optional Dependencies.',
+            'Do not output bullet lists like "✅ Updated files:". Only use File blocks + optional Dependencies.'
           ].join('\n')
         }
       ]
     }
 
-    if (requireChanges && (parsed.files.length === 0 && parsed.dependencies.length === 0)) {
+    if (requireChanges && parsed.files.length === 0 && parsed.dependencies.length === 0) {
       throw new Error(
         'AI did not return any file updates (no File blocks / Dependencies). Try a different model or re-run with a more specific prompt.'
       )
     }
 
-    // Apply changes to filesystem
     const applyRes = await applyChanges({
       projectDir: projectPath,
       files: parsed.files,
@@ -825,7 +791,11 @@ async function runAiAndApply(req: AiRunRequest): Promise<AiRunResult> {
       parts.push('', '✅ Updated files:', ...applyRes.writtenFiles.map((f) => `- ${f}`))
     }
     if (applyRes.installedDependencies.length > 0) {
-      parts.push('', '📦 Installed dependencies:', ...applyRes.installedDependencies.map((d) => `- ${d}`))
+      parts.push(
+        '',
+        '📦 Installed dependencies:',
+        ...applyRes.installedDependencies.map((d) => `- ${d}`)
+      )
     }
     if (parsed.files.length === 0) {
       parts.push('', '_No file blocks were returned by the model._')
@@ -901,22 +871,10 @@ app.on('before-quit', () => {
 })
 
 app.on('window-all-closed', () => {
-  // On macOS, the app stays alive after closing windows. Ensure we don't leave orphan preview servers.
   void previewManager.stopAll().catch(() => {})
   if (process.platform !== 'darwin') app.quit()
 })
 
-/**
- * IPC handlers
- */
-/**
- * Milestone 4 (WYSIWYG): Apply a visual edit by doing a best-effort find/replace in the user's code.
- *
- * NOTE: This is intentionally conservative and heuristic-based (no AST yet). It works best for:
- * - App Router pages (e.g., src/app/.../page.tsx)
- * - Unique text edits
- * - Simple className strings (no heavy conditional concatenation)
- */
 function normalizeRoute(route: string): string {
   const raw = (route ?? '').toString().trim()
   if (!raw) return '/'
@@ -930,18 +888,15 @@ function candidatePageRelPaths(route: string): string[] {
   const r = normalizeRoute(route)
   const segs = r.split('/').filter(Boolean)
 
-  // Next.js App Router
   const appSubPath = segs.length ? `${segs.join('/')}/page.tsx` : 'page.tsx'
   const appSubPathJsx = segs.length ? `${segs.join('/')}/page.jsx` : 'page.jsx'
   const appSubPathTs = segs.length ? `${segs.join('/')}/page.ts` : 'page.ts'
   const appSubPathJs = segs.length ? `${segs.join('/')}/page.js` : 'page.js'
 
-  // Next.js Pages Router fallbacks
   const pagesPath = segs.length ? `${segs.join('/')}.tsx` : 'index.tsx'
   const pagesPathJsx = segs.length ? `${segs.join('/')}.jsx` : 'index.jsx'
 
   const candidates = [
-    // App Router (common)
     `src/app/${appSubPath}`,
     `app/${appSubPath}`,
     `src/app/${appSubPathJsx}`,
@@ -951,26 +906,25 @@ function candidatePageRelPaths(route: string): string[] {
     `src/app/${appSubPathJs}`,
     `app/${appSubPathJs}`,
 
-    // Pages Router
     `src/pages/${pagesPath}`,
     `pages/${pagesPath}`,
     `src/pages/${pagesPathJsx}`,
     `pages/${pagesPathJsx}`
   ]
 
-  // De-dupe
   return Array.from(new Set(candidates))
 }
 
-async function firstExistingRelPath(projectDir: string, relPaths: string[]): Promise<string | null> {
+async function firstExistingRelPath(
+  projectDir: string,
+  relPaths: string[]
+): Promise<string | null> {
   for (const rel of relPaths) {
     const abs = path.join(projectDir, rel)
     try {
       const st = await fsp.stat(abs)
       if (st.isFile()) return rel
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
   return null
 }
@@ -1049,7 +1003,6 @@ async function applyDesignEdit(req: DesignApplyRequest): Promise<DesignApplyResu
   const candidatesAbs: string[] = []
   const seen = new Set<string>()
 
-  // 1) Prefer the route's page file if it exists.
   const primaryRel = await firstExistingRelPath(projectDir, candidatePageRelPaths(route))
   if (primaryRel) {
     const abs = path.join(projectDir, primaryRel)
@@ -1057,7 +1010,6 @@ async function applyDesignEdit(req: DesignApplyRequest): Promise<DesignApplyResu
     seen.add(abs)
   }
 
-  // 2) Fallback: scan likely source roots for any file that contains the original text/class.
   const scanRoots = [
     path.join(projectDir, 'src'),
     path.join(projectDir, 'app'),
@@ -1141,7 +1093,9 @@ ipcMain.handle('settings:get', async () => loadSettings())
 ipcMain.handle('settings:save', async (_evt, next: AppSettings) => saveSettings(next))
 
 ipcMain.handle('templates:list', async () => loadTemplatesIndex())
-ipcMain.handle('templates:thumbnailData', async (_evt, templateId: string) => templateThumbnailData(templateId))
+ipcMain.handle('templates:thumbnailData', async (_evt, templateId: string) =>
+  templateThumbnailData(templateId)
+)
 
 ipcMain.handle('projects:list', async () => listProjects())
 ipcMain.handle('projects:create', async (_evt, req: CreateProjectRequest) => createProject(req))
@@ -1182,22 +1136,20 @@ ipcMain.handle('ai:cancel', async (_evt, requestId: string) => {
   return true
 })
 
-// Milestone 3: Live Preview (Next.js dev server) IPC
-ipcMain.handle('preview:start', async (_evt, projectPath: string, opts?: { port?: number; autoInstallDeps?: boolean }) => {
-  // Ensure the project has the in-preview design bridge (route tracking, inspect mode, etc.)
-  // Best-effort: preview should still start even if bridge injection fails.
-  try {
-    await ensureDesignBridge(projectPath)
-  } catch {
-    // ignore
-  }
+ipcMain.handle(
+  'preview:start',
+  async (_evt, projectPath: string, opts?: { port?: number; autoInstallDeps?: boolean }) => {
+    try {
+      await ensureDesignBridge(projectPath)
+    } catch {}
 
-  return previewManager.start({
-    projectPath,
-    port: opts?.port,
-    autoInstallDeps: opts?.autoInstallDeps
-  })
-})
+    return previewManager.start({
+      projectPath,
+      port: opts?.port,
+      autoInstallDeps: opts?.autoInstallDeps
+    })
+  }
+)
 
 ipcMain.handle('preview:stop', async (_evt, projectPath: string) => {
   return previewManager.stop(projectPath)
@@ -1211,10 +1163,12 @@ ipcMain.handle('preview:logs', async (_evt, projectPath: string, opts?: { tail?:
   return previewManager.logs(projectPath, opts)
 })
 
-
-ipcMain.handle('design:apply', async (_evt, req: DesignApplyRequest): Promise<DesignApplyResult> => {
-  return applyDesignEdit(req)
-})
+ipcMain.handle(
+  'design:apply',
+  async (_evt, req: DesignApplyRequest): Promise<DesignApplyResult> => {
+    return applyDesignEdit(req)
+  }
+)
 
 ipcMain.handle('dialog:selectDirectory', async (_evt, opts?: { defaultPath?: string }) => {
   const result = await dialog.showOpenDialog(mainWindow!, {
@@ -1225,6 +1179,3 @@ ipcMain.handle('dialog:selectDirectory', async (_evt, opts?: { defaultPath?: str
   if (result.canceled) return null
   return result.filePaths[0] ?? null
 })
-
-
-

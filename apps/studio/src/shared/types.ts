@@ -1,5 +1,3 @@
-// Shared types between Electron main, preload, and renderer.
-
 export type AiMode = 'cloud' | 'local'
 
 export type ChatRole = 'user' | 'assistant' | 'system'
@@ -85,7 +83,6 @@ export interface AiRunResult {
   cancelled?: boolean
 }
 
-// Preview (Next.js dev server) types
 export type PreviewState = 'stopped' | 'starting' | 'running' | 'error'
 
 export interface PreviewStartOptions {
@@ -111,7 +108,6 @@ export interface PreviewLogsOptions {
   tail?: number
 }
 
-// --- Milestone 4: WYSIWYG selection/edit types ---
 export interface DesignSelection {
   /** A CSS selector that identifies the element inside the preview DOM. */
   selector: string

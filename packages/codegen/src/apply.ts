@@ -12,14 +12,11 @@ export type ApplyResult = {
 
 function normalizePathInput(raw: string): string {
   let s = (raw ?? "").toString().replace(/\\/g, "/").trim();
-  // Some models include bullets or quotes.
   s = s.replace(/^[-*]\s+/, "");
   s = s.replace(/^['"`]|['"`]$/g, "");
 
-  // Strip trailing line/col suffixes from error logs, e.g. "src/app/page.tsx:12:3".
   s = s.replace(/:(\d+)(?::\d+)?$/, "");
 
-  // Normalize leading ./
   s = s.replace(/^\.\//, "");
   return s;
 }
@@ -30,24 +27,29 @@ function sanitizeRelative(projectDir: string, p: string): string {
 
   const projectAbs = path.resolve(projectDir);
 
-  // Allow absolute paths *only if* they live inside the project directory.
   if (path.isAbsolute(cleaned) || /^[A-Za-z]:\//.test(cleaned)) {
     const abs = path.resolve(cleaned);
     const rel = path.relative(projectAbs, abs).replace(/\\/g, "/");
     if (!rel || rel.startsWith("..") || rel.includes("../")) {
-      throw new Error(`Absolute path not allowed (outside project): ${cleaned}`);
+      throw new Error(
+        `Absolute path not allowed (outside project): ${cleaned}`,
+      );
     }
     return sanitizeRelative(projectDir, rel);
   }
 
   const norm = path.posix.normalize(cleaned);
-  if (norm.startsWith("..") || norm.includes("/../")) throw new Error(`Path traversal not allowed: ${cleaned}`);
+  if (norm.startsWith("..") || norm.includes("/../"))
+    throw new Error(`Path traversal not allowed: ${cleaned}`);
   return norm;
 }
 
 async function readProjectPackageJson(projectDir: string): Promise<any | null> {
   try {
-    const raw = await fs.readFile(path.join(projectDir, "package.json"), "utf-8");
+    const raw = await fs.readFile(
+      path.join(projectDir, "package.json"),
+      "utf-8",
+    );
     return JSON.parse(raw);
   } catch {
     return null;
@@ -70,55 +72,57 @@ function sanitizeNextFileContent(relPath: string, content: string): string {
 
   let out = content;
 
-  // Fix common hallucination: react-router-dom in Next projects.
-  // Only rewrite when it's clearly just Link.
   out = out.replace(
     /^\s*import\s+Link\s+from\s+['"]react-router-dom['"];?\s*$/gm,
-    "import Link from 'next/link'"
+    "import Link from 'next/link'",
   );
   out = out.replace(
     /^\s*import\s+\{\s*Link\s*\}\s+from\s+['"]react-router-dom['"];?\s*$/gm,
-    "import Link from 'next/link'"
+    "import Link from 'next/link'",
   );
 
-  // Convert <Link to="..."> to <Link href="...">.
   out = out.replace(/<Link(\s[^>]*?)\bto=/g, "<Link$1href=");
 
-  // Fix common type import mistake.
   out = out.replace(
     /^\s*import\s+\{\s*Metadata\s*\}\s+from\s+['"]next\/navigation['"];?\s*$/gm,
-    "import type { Metadata } from 'next'"
+    "import type { Metadata } from 'next'",
   );
 
-  // In App Router, pages typically should not import globals.css.
-  // Remove any attempted globals.css import in page files.
   if (/(^|\/)page\.(tsx|ts|jsx|js)$/.test(p)) {
     out = out.replace(/^\s*import\s+[^;]*globals\.css['"];?\s*$/gm, "");
 
-    // Next.js App Router restriction: you cannot export `metadata` or `generateMetadata`
-    // from a Client Component (a file with a `"use client"` directive).
-    // Some models mistakenly add both, which breaks `next dev` immediately.
     const head = out.split(/\r?\n/).slice(0, 30).join("\n");
     const hasUseClient = /^\s*['"]use client['"]\s*;?\s*$/m.test(head);
-    const hasMetadataExport = /\bexport\s+const\s+metadata\b/.test(out) || /\bexport\s+(?:async\s+)?function\s+generateMetadata\b/.test(out);
+    const hasMetadataExport =
+      /\bexport\s+const\s+metadata\b/.test(out) ||
+      /\bexport\s+(?:async\s+)?function\s+generateMetadata\b/.test(out);
 
     if (hasUseClient && hasMetadataExport) {
-      // If the file doesn't appear to use client-only hooks, we can safely drop `use client`.
-      const usesClientOnly = /\buse(State|Effect|LayoutEffect|Memo|Callback|Ref|Reducer|Transition|DeferredValue|Optimistic|SyncExternalStore|Id)\b/.test(out)
-        || /\buse(Pathname|SearchParams|Params|Router)\b/.test(out)
-        || /from\s+['"]next\/navigation['"]/.test(out)
-        || /onClick\s*=/.test(out);
+      const usesClientOnly =
+        /\buse(State|Effect|LayoutEffect|Memo|Callback|Ref|Reducer|Transition|DeferredValue|Optimistic|SyncExternalStore|Id)\b/.test(
+          out,
+        ) ||
+        /\buse(Pathname|SearchParams|Params|Router)\b/.test(out) ||
+        /from\s+['"]next\/navigation['"]/.test(out) ||
+        /onClick\s*=/.test(out);
 
       if (!usesClientOnly) {
         out = out.replace(/^\s*['"]use client['"]\s*;?\s*\n?/m, "");
       } else {
-        // Otherwise, remove metadata exports and rely on layout.tsx metadata.
-        out = out.replace(/^\s*export\s+const\s+metadata\b[\s\S]*?^\s*\}[^\n]*;\s*\n?/m, "");
-        out = out.replace(/^\s*export\s+(?:async\s+)?function\s+generateMetadata\b[\s\S]*?^\s*\}\s*\n?/m, "");
+        out = out.replace(
+          /^\s*export\s+const\s+metadata\b[\s\S]*?^\s*\}[^\n]*;\s*\n?/m,
+          "",
+        );
+        out = out.replace(
+          /^\s*export\s+(?:async\s+)?function\s+generateMetadata\b[\s\S]*?^\s*\}\s*\n?/m,
+          "",
+        );
 
-        // If we removed the export, clean up a now-unused Metadata import.
         if (!/\bMetadata\b/.test(out)) {
-          out = out.replace(/^\s*import\s+type\s*\{\s*Metadata\s*\}\s+from\s+['"]next['"];?\s*\n?/gm, "");
+          out = out.replace(
+            /^\s*import\s+type\s*\{\s*Metadata\s*\}\s+from\s+['"]next['"];?\s*\n?/gm,
+            "",
+          );
         }
       }
     }
@@ -127,29 +131,46 @@ function sanitizeNextFileContent(relPath: string, content: string): string {
   return out;
 }
 
-async function writeFile(projectDir: string, ch: FileChange, ctx: { isNextProject: boolean }): Promise<string> {
+async function writeFile(
+  projectDir: string,
+  ch: FileChange,
+  ctx: { isNextProject: boolean },
+): Promise<string> {
   const rel = sanitizeRelative(projectDir, ch.path);
   const dest = path.join(projectDir, ...rel.split("/"));
   await fs.mkdir(path.dirname(dest), { recursive: true });
 
-  const content = ctx.isNextProject ? sanitizeNextFileContent(rel, ch.content) : ch.content;
+  const content = ctx.isNextProject
+    ? sanitizeNextFileContent(rel, ch.content)
+    : ch.content;
   await fs.writeFile(dest, content, "utf-8");
   return rel;
 }
 
 function run(cmd: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const p = spawn(cmd, args, { cwd, stdio: "inherit", shell: process.platform === "win32" });
+    const p = spawn(cmd, args, {
+      cwd,
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    });
     p.on("error", reject);
     p.on("exit", (code) =>
-      code === 0 ? resolve() : reject(new Error(`${cmd} ${args.join(" ")} failed with code ${code}`))
+      code === 0
+        ? resolve()
+        : reject(
+            new Error(`${cmd} ${args.join(" ")} failed with code ${code}`),
+          ),
     );
   });
 }
 
 async function cmdOk(cmd: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const p = spawn(cmd, ["--version"], { stdio: "ignore", shell: process.platform === "win32" });
+    const p = spawn(cmd, ["--version"], {
+      stdio: "ignore",
+      shell: process.platform === "win32",
+    });
     p.on("error", () => resolve(false));
     p.on("exit", (code) => resolve(code === 0));
   });
@@ -181,13 +202,11 @@ async function installBestEffort(opts: {
     await run(opts.cmd, opts.argsForPkgs(pkgs), opts.cwd);
     return { installed: pkgs, skipped: [] };
   } catch {
-    // If a batch install fails (often due to one invalid package), try each package individually.
     const installed: string[] = [];
     const skipped: string[] = [];
 
     for (const pkg of pkgs) {
       try {
-        // eslint-disable-next-line no-await-in-loop
         await run(opts.cmd, opts.argsForPkgs([pkg]), opts.cwd);
         installed.push(pkg);
       } catch {
@@ -196,16 +215,16 @@ async function installBestEffort(opts: {
     }
 
     if (installed.length === 0) {
-      // eslint-disable-next-line no-console
       console.warn(
-        `[studio/codegen] Failed to install dependencies (${opts.label ?? "deps"}); continuing without them: ${pkgs.join(", ")}`
+        `[studio/codegen] Failed to install dependencies (${opts.label ?? "deps"}); continuing without them: ${pkgs.join(", ")}`,
       );
       return { installed: [], skipped: pkgs };
     }
 
     if (skipped.length) {
-      // eslint-disable-next-line no-console
-      console.warn(`[studio/codegen] Skipped failed dependencies (${opts.label ?? "deps"}): ${skipped.join(", ")}`);
+      console.warn(
+        `[studio/codegen] Skipped failed dependencies (${opts.label ?? "deps"}): ${skipped.join(", ")}`,
+      );
     }
 
     return { installed, skipped };
@@ -220,9 +239,11 @@ async function installBestEffort(opts: {
  * - shadcn generator mistaken as packages (shadcn/ui, ui, @shadcn/ui)
  * - URL/git dependencies (unreliable in this tool)
  */
-function filterInvalidDeps(deps: string[], ctx: { isNextProject: boolean }): string[] {
+function filterInvalidDeps(
+  deps: string[],
+  ctx: { isNextProject: boolean },
+): string[] {
   const denyExact = new Set<string>([
-    // Tailwind directives (not packages)
     "@tailwindcss/base",
     "@tailwindcss/components",
     "@tailwindcss/utilities",
@@ -233,17 +254,14 @@ function filterInvalidDeps(deps: string[], ctx: { isNextProject: boolean }): str
     "@tailwind/components",
     "@tailwind/utilities",
 
-    // shadcn generator hallucinations / wrong meta package
     "shadcn/ui",
     "shadcn-ui",
     "shadcn",
     "ui",
     "@shadcn/ui",
 
-    // Known non-existent / hallucinated packages
     "@vercel/preact",
 
-    // Next import paths commonly mistaken as deps
     "next/link",
     "next/image",
     "next/navigation",
@@ -251,7 +269,6 @@ function filterInvalidDeps(deps: string[], ctx: { isNextProject: boolean }): str
     "next/head",
     "next/server",
 
-    // Common hallucination: there is no "@next/navigation" package
     "@next/navigation",
   ]);
 
@@ -260,15 +277,12 @@ function filterInvalidDeps(deps: string[], ctx: { isNextProject: boolean }): str
     const name = raw.trim();
     if (!name) continue;
 
-    // Reject whitespace tokens
     if (/\s/.test(name)) continue;
 
     const lower = name.toLowerCase();
 
-    // Block @next/* internal scopes (these are not meant to be installed directly).
     if (lower.startsWith("@next/")) continue;
 
-    // Reject URL / git style deps
     if (
       lower.startsWith("git+") ||
       lower.startsWith("git://") ||
@@ -282,24 +296,25 @@ function filterInvalidDeps(deps: string[], ctx: { isNextProject: boolean }): str
 
     if (denyExact.has(name)) continue;
 
-    // Non-existent package sometimes suggested by the AI. Skip it (including versioned forms).
-    if (name === "@vercel/preact" || name.startsWith("@vercel/preact@")) continue;
+    if (name === "@vercel/preact" || name.startsWith("@vercel/preact@"))
+      continue;
 
-    // In Next projects, disallow react-router.
     if (ctx.isNextProject) {
       if (name === "react-router" || name.startsWith("react-router@")) continue;
-      if (name === "react-router-dom" || name.startsWith("react-router-dom@")) continue;
+      if (name === "react-router-dom" || name.startsWith("react-router-dom@"))
+        continue;
     }
 
-    // If it looks like an import path (has "/") and it's not a scoped package (@scope/pkg),
-    // treat it as invalid for installation.
     if (name.includes("/") && !name.startsWith("@")) {
       continue;
     }
 
-    // Block most @tailwindcss/* except known real packages.
     if (name.startsWith("@tailwindcss/")) {
-      const allow = new Set<string>(["@tailwindcss/postcss", "@tailwindcss/node", "@tailwindcss/oxide"]);
+      const allow = new Set<string>([
+        "@tailwindcss/postcss",
+        "@tailwindcss/node",
+        "@tailwindcss/oxide",
+      ]);
       if (!allow.has(name)) continue;
     }
 
@@ -312,14 +327,16 @@ function filterInvalidDeps(deps: string[], ctx: { isNextProject: boolean }): str
 async function installDeps(
   projectDir: string,
   deps: string[],
-  ctx: { isNextProject: boolean }
+  ctx: { isNextProject: boolean },
 ): Promise<{ installed: string[]; skipped: string[] }> {
   const raw = Array.from(new Set(deps.map((d) => d.trim()).filter(Boolean)));
   const valid = filterInvalidDeps(raw, ctx);
   const validSet = new Set(valid);
   const blocked = raw.filter((d) => !validSet.has(d));
 
-  const needed = Array.from(new Set(valid.map((d) => d.trim()).filter(Boolean)));
+  const needed = Array.from(
+    new Set(valid.map((d) => d.trim()).filter(Boolean)),
+  );
   if (needed.length === 0) return { installed: [], skipped: blocked };
 
   const prod: string[] = [];
@@ -419,9 +436,13 @@ export async function applyChanges(opts: {
     writtenFiles.push(rel);
   }
 
-  const depRes = await installDeps(opts.projectDir, opts.dependencies ?? [], { isNextProject });
+  const depRes = await installDeps(opts.projectDir, opts.dependencies ?? [], {
+    isNextProject,
+  });
 
-  // NOTE: dependency install is best-effort. We continue even when installs fail.
-  // The preview/build auto-fix loop can then either remove the dependency or pick a working package.
-  return { writtenFiles, installedDependencies: depRes.installed, skippedDependencies: depRes.skipped };
+  return {
+    writtenFiles,
+    installedDependencies: depRes.installed,
+    skippedDependencies: depRes.skipped,
+  };
 }

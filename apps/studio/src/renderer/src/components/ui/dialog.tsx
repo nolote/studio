@@ -38,7 +38,9 @@ export function Dialog({ open, defaultOpen, onOpenChange, children }: DialogProp
     [isControlled, onOpenChange]
   )
 
-  return <DialogContext.Provider value={{ open: current, setOpen }}>{children}</DialogContext.Provider>
+  return (
+    <DialogContext.Provider value={{ open: current, setOpen }}>{children}</DialogContext.Provider>
+  )
 }
 
 export interface DialogTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -50,7 +52,6 @@ export const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerPr
     const ctx = useDialogContext()
 
     if (asChild && React.isValidElement(children)) {
-      // Minimal asChild support: clone the child and inject click handler
       return React.cloneElement(children as React.ReactElement<any>, {
         onClick: (e: any) => {
           ctx.setOpen(true)
@@ -118,7 +119,6 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
               'relative w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-4 shadow-lg',
               className
             )}
-            // Prevent overlay close when clicking inside content
             onMouseDown={(e) => e.stopPropagation()}
             {...props}
           >
@@ -136,20 +136,38 @@ DialogContent.displayName = 'DialogContent'
 export interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function DialogHeader({ className, ...props }: DialogHeaderProps) {
-  return <div className={cx('flex flex-col space-y-1.5 text-center sm:text-left', className)} {...props} />
+  return (
+    <div
+      className={cx('flex flex-col space-y-1.5 text-center sm:text-left', className)}
+      {...props}
+    />
+  )
 }
 
 export interface DialogFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function DialogFooter({ className, ...props }: DialogFooterProps) {
-  return <div className={cx('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props} />
+  return (
+    <div
+      className={cx('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
+      {...props}
+    />
+  )
 }
 
 export interface DialogTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 
-export const DialogTitle = React.forwardRef<HTMLHeadingElement, DialogTitleProps>(({ className, ...props }, ref) => {
-  return <h2 ref={ref} className={cx('text-lg font-semibold leading-none tracking-tight', className)} {...props} />
-})
+export const DialogTitle = React.forwardRef<HTMLHeadingElement, DialogTitleProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <h2
+        ref={ref}
+        className={cx('text-lg font-semibold leading-none tracking-tight', className)}
+        {...props}
+      />
+    )
+  }
+)
 
 DialogTitle.displayName = 'DialogTitle'
 

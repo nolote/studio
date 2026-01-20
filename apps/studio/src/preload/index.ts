@@ -11,7 +11,6 @@ import type {
 } from '../shared/types'
 
 const api: studioApiWithCompat = {
-  // Nested API (preferred)
   projects: {
     list: () => ipcRenderer.invoke('projects:list'),
     create: (req: CreateProjectRequest) => ipcRenderer.invoke('projects:create', req),
@@ -19,7 +18,6 @@ const api: studioApiWithCompat = {
       ipcRenderer.invoke('projects:tree', projectPath, opts)
   },
 
-  // Back-compat flat aliases (some older UI used these)
   projectsList: () => ipcRenderer.invoke('projects:list'),
   projectsCreate: (req: CreateProjectRequest) => ipcRenderer.invoke('projects:create', req),
   projectsTree: (projectPath: string, opts?: { maxDepth?: number }) =>
@@ -31,7 +29,8 @@ const api: studioApiWithCompat = {
   },
 
   fs: {
-    tree: (rootPath: string, opts?: { maxDepth?: number }) => ipcRenderer.invoke('fs:tree', rootPath, opts)
+    tree: (rootPath: string, opts?: { maxDepth?: number }) =>
+      ipcRenderer.invoke('fs:tree', rootPath, opts)
   },
 
   settings: {
@@ -42,14 +41,14 @@ const api: studioApiWithCompat = {
   chat: {
     load: (projectPath: string) => ipcRenderer.invoke('chat:load', projectPath),
     clear: (projectPath: string) => ipcRenderer.invoke('chat:clear', projectPath),
-    // Back-compat: some builds used chat.read/chat.write
     read: (projectPath: string) => ipcRenderer.invoke('chat:read', projectPath),
-    write: (projectPath: string, chat: ChatMessage[]) => ipcRenderer.invoke('chat:write', projectPath, chat)
+    write: (projectPath: string, chat: ChatMessage[]) =>
+      ipcRenderer.invoke('chat:write', projectPath, chat)
   },
 
-  // Back-compat flat aliases
   chatRead: (projectPath: string) => ipcRenderer.invoke('chat:read', projectPath),
-  chatWrite: (projectPath: string, chat: ChatMessage[]) => ipcRenderer.invoke('chat:write', projectPath, chat),
+  chatWrite: (projectPath: string, chat: ChatMessage[]) =>
+    ipcRenderer.invoke('chat:write', projectPath, chat),
 
   previewStart: (projectPath: string, opts?: PreviewStartOptions) =>
     ipcRenderer.invoke('preview:start', projectPath, opts),
@@ -76,11 +75,11 @@ const api: studioApiWithCompat = {
     apply: (req: DesignApplyRequest) => ipcRenderer.invoke('design:apply', req)
   },
 
-  // Back-compat flat alias
   designApply: (req: DesignApplyRequest) => ipcRenderer.invoke('design:apply', req),
 
   dialog: {
-    selectDirectory: (opts?: SelectDirectoryOptions) => ipcRenderer.invoke('dialog:selectDirectory', opts)
+    selectDirectory: (opts?: SelectDirectoryOptions) =>
+      ipcRenderer.invoke('dialog:selectDirectory', opts)
   }
 }
 

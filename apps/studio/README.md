@@ -1,4 +1,5 @@
 # studio-studio
+
 <h1 align="center">electron-app</h1>
 
 <p align="center">An Electron application with Vue3 and TypeScript</p>
@@ -48,13 +49,13 @@ You can also use the [create-electron](https://github.com/alex8088/quick-start/t
 ### Install
 
 ```bash
-$ npm install
+npm install
 ```
 
 ### Development
 
 ```bash
-$ npm run dev
+npm run dev
 ```
 
 ### Build

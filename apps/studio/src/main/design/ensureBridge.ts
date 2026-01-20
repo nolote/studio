@@ -49,29 +49,20 @@ function cssEscape(value: string): string {
   // Prefer the platform escape (widely supported in modern browsers).
   const css = (globalThis as any).CSS
   if (css && typeof css.escape === 'function') return css.escape(value)
-  // Fallback: escape quotes + backslashes (enough for our data-studio-id usage).
+  // Fallback: escape quotes + backslashes (enough for our data-vb-id usage).
   return value.replace(/["\\]/g, '\\$&')
 }
 
-function ensureStudioId(el: HTMLElement): string {
-  // Prefer the new Studio id, but accept legacy vbId if present.
-  const existing = (el as any).dataset?.studioId || (el as any).dataset?.vbId
-  if (existing) {
-    // Mirror legacy id into the new attribute name so future selections use data-studio-id.
-    if (!(el as any).dataset?.studioId) {
-      ;(el as any).dataset.studioId = existing
-    }
-    return (el as any).dataset.studioId
+function ensureVbId(el: HTMLElement): string {
+  if (!el.dataset.vbId) {
+    el.dataset.vbId = 'vb_' + Math.random().toString(16).slice(2) + Date.now().toString(16)
   }
-
-  const id = 'studio_' + Math.random().toString(16).slice(2) + Date.now().toString(16)
-  ;(el as any).dataset.studioId = id
-  return id
+  return el.dataset.vbId
 }
 
 function selectionFromElement(el: HTMLElement): DesignSelection {
-  const id = ensureStudioId(el)
-  const selector = '[data-studio-id="' + cssEscape(id) + '"]'
+  const id = ensureVbId(el)
+  const selector = '[data-vb-id="' + cssEscape(id) + '"]'
   const text = (el.innerText || el.textContent || '').trim()
   const className = (el.getAttribute('class') || '').trim()
   return {
@@ -344,7 +335,7 @@ export default function studioDesignBridge() {
       if (!target) return
 
       if (target === hoverBoxRef.current || target === selectBoxRef.current) return
-      if (target.closest('[data-studio-ignore],[data-vb-ignore]')) return
+      if (target.closest('[data-vb-ignore]')) return
 
       const box = hoverBoxRef.current
       if (!box) return
@@ -361,7 +352,7 @@ export default function studioDesignBridge() {
       const target = e.target as HTMLElement | null
       if (!target) return
       if (target === hoverBoxRef.current || target === selectBoxRef.current) return
-      if (target.closest('[data-studio-ignore],[data-vb-ignore]')) return
+      if (target.closest('[data-vb-ignore]')) return
 
       const selection = selectionFromElement(target)
 
@@ -399,7 +390,7 @@ function candidateLayoutFiles(projectPath: string): string[] {
     path.join(root, 'src/app/layout.tsx'),
     path.join(root, 'app/layout.tsx'),
     path.join(root, 'src/app/layout.jsx'),
-    path.join(root, 'app/layout.jsx'),
+    path.join(root, 'app/layout.jsx')
   ]
 }
 
@@ -425,7 +416,6 @@ function ensureImport(src: string, spec: string): string {
 
   const importLine = `import studioDesignBridge from "${spec}";\n`
 
-  // Insert after the initial import block (keeps prettier-ish structure).
   const m = src.match(/^(?:import[^\n]*\n)+/m)
   if (m && m.index === 0) {
     return src.replace(m[0], m[0] + importLine)
@@ -446,7 +436,6 @@ function ensureRender(src: string): string {
 }
 
 export async function ensureDesignBridge(projectPath: string): Promise<void> {
-  // Find a Next.js App Router layout file.
   const layouts = candidateLayoutFiles(projectPath)
   let layoutAbs: string | null = null
 
@@ -458,24 +447,18 @@ export async function ensureDesignBridge(projectPath: string): Promise<void> {
   }
 
   if (!layoutAbs) {
-    // If no layout found, do nothing (project may be pages-router only).
     return
   }
 
-  // Ensure bridge file exists (and is up to date).
   const bridgeAbs = computeBridgeAbs(projectPath, layoutAbs)
   const bridgeDir = path.dirname(bridgeAbs)
   await fs.mkdir(bridgeDir, { recursive: true })
 
-  // This file is generated/owned by the Studio. Always keep it in a known-good state.
-  // (The AI auto-fix flow may edit it when it appears in error logs, so we proactively
-  // overwrite any drift/corruption on preview start.)
   const existing = await fs.readFile(bridgeAbs, 'utf-8').catch(() => null)
   if (existing !== BRIDGE_SOURCE) {
     await fs.writeFile(bridgeAbs, BRIDGE_SOURCE, 'utf-8')
   }
 
-  // Ensure layout imports + renders <studioDesignBridge />
   const src = await fs.readFile(layoutAbs, 'utf-8').catch(() => null)
   if (src == null) return
 
@@ -488,4 +471,3 @@ export async function ensureDesignBridge(projectPath: string): Promise<void> {
     await fs.writeFile(layoutAbs, next, 'utf-8')
   }
 }
-

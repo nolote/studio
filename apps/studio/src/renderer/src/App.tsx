@@ -9,7 +9,7 @@ import type {
   PreviewStatus,
   DesignSelection,
   DesignApplyRequest,
-  DesignApplyResult,
+  DesignApplyResult
 } from '@shared/types'
 
 import { ResizablePanels } from './components/studio/ResizablePanels'
@@ -43,21 +43,32 @@ function normalizeRoute(raw: string): string {
 }
 
 function findLikelyErrorLine(lines: string[]): string | null {
-  // Scan from the end for the most relevant (human readable) error line.
-  // Only look at the most recent slice to avoid flagging stale errors.
   const start = Math.max(0, lines.length - 160)
   for (let i = lines.length - 1; i >= start; i--) {
     const line = (lines[i] ?? '').trim()
     if (!line) continue
     const low = line.toLowerCase()
 
-    // Preview manager prefix
     if (line.startsWith('✖')) return line
 
-    // Common Next / Node error patterns
-    if (low.startsWith('error:') || low.includes('failed to compile') || low.includes('module not found')) return line
-    if (low.includes('cannot find module') || low.includes('syntaxerror') || low.includes('referenceerror')) return line
-    if (low.includes('typeerror') || low.includes('unhandledrejection') || low.includes('unhandled rejection')) return line
+    if (
+      low.startsWith('error:') ||
+      low.includes('failed to compile') ||
+      low.includes('module not found')
+    )
+      return line
+    if (
+      low.includes('cannot find module') ||
+      low.includes('syntaxerror') ||
+      low.includes('referenceerror')
+    )
+      return line
+    if (
+      low.includes('typeerror') ||
+      low.includes('unhandledrejection') ||
+      low.includes('unhandled rejection')
+    )
+      return line
   }
   return null
 }
@@ -81,9 +92,7 @@ function Modal(props: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div
-        className={
-          `w-full border border-border bg-popover text-popover-foreground shadow-2xl ${props.widthClassName ?? 'max-w-xl'}`
-        }
+        className={`w-full border border-border bg-popover text-popover-foreground shadow-2xl ${props.widthClassName ?? 'max-w-xl'}`}
       >
         <div className="flex items-center justify-between border-b border-border bg-[var(--titlebar-bg)] px-4 py-3">
           <div className="text-sm font-semibold text-foreground">{props.title}</div>
@@ -107,8 +116,7 @@ function TabButton(props: {
   children: React.ReactNode
   className?: string
 }) {
-  const base =
-    'px-3 py-2 text-xs font-medium uppercase tracking-wide border-b-2 transition-colors '
+  const base = 'px-3 py-2 text-xs font-medium uppercase tracking-wide border-b-2 transition-colors '
   const active = props.active
     ? 'text-foreground border-primary bg-[var(--pane-bg)]'
     : 'text-muted-foreground border-transparent bg-[var(--toolbar-bg)] hover:text-foreground hover:bg-[var(--hover-bg)]'
@@ -247,7 +255,11 @@ function SettingsModal(props: {
   return (
     <Modal open={props.open} title="Settings" onClose={props.onClose} widthClassName="max-w-2xl">
       <div className="space-y-4">
-        {error && <div className="border border-[color:var(--error)] bg-[color:rgba(241,76,76,0.12)] p-3 text-sm text-[color:var(--error)]">{error}</div>}
+        {error && (
+          <div className="border border-[color:var(--error)] bg-[color:rgba(241,76,76,0.12)] p-3 text-sm text-[color:var(--error)]">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="text-sm font-semibold">Projects folder</div>
@@ -255,10 +267,10 @@ function SettingsModal(props: {
             className="w-full border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:outline-1 focus:outline-primary"
             value={draft.projectsRoot}
             onChange={(e) => setDraft((d) => ({ ...d, projectsRoot: e.target.value }))}
-            placeholder="e.g., /Users/you/StudioProjects"
+            placeholder="e.g., /Users/you/studioProjects"
           />
           <div className="text-xs text-muted-foreground">
-            Where Studio stores generated projects on your machine.
+            Where studio stores generated projects on your machine.
           </div>
         </div>
 
@@ -283,11 +295,17 @@ function SettingsModal(props: {
             onChange={(e) => setDraft((d) => ({ ...d, localModelPath: e.target.value }))}
             placeholder="ollama:llama3.1"
           />
-          <div className="text-xs text-muted-foreground">Format: <code>provider:model</code> (example: <code>ollama:llama3.1</code>). To change the Ollama server URL, set <code>studio_OLLAMA_BASE_URL</code>.</div>
+          <div className="text-xs text-muted-foreground">
+            Format: <code>provider:model</code> (example: <code>ollama:llama3.1</code>). To change
+            the Ollama server URL, set <code>studio_OLLAMA_BASE_URL</code>.
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button className="rounded border px-4 py-2 text-sm hover:bg-[#454545]" onClick={props.onClose}>
+          <button
+            className="rounded border px-4 py-2 text-sm hover:bg-[#454545]"
+            onClick={props.onClose}
+          >
             Cancel
           </button>
           <button
@@ -322,8 +340,20 @@ function NewProjectModal(props: {
   const [error, setError] = useState<string | null>(null)
 
   const allTemplates = useMemo(() => {
-    return [{ id: 'scratch', name: 'Start from scratch', description: 'Base Next.js scaffold', tags: [] as string[] }].concat(
-      props.templates.map((t) => ({ id: t.id, name: t.name, description: t.description, tags: t.tags }))
+    return [
+      {
+        id: 'scratch',
+        name: 'Start from scratch',
+        description: 'Base Next.js scaffold',
+        tags: [] as string[]
+      }
+    ].concat(
+      props.templates.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        tags: t.tags
+      }))
     )
   }, [props.templates])
 
@@ -391,7 +421,11 @@ function NewProjectModal(props: {
           </div>
         </div>
 
-        {error && <div className="border border-[color:var(--error)] bg-[color:rgba(241,76,76,0.12)] p-3 text-sm text-[color:var(--error)]">{error}</div>}
+        {error && (
+          <div className="border border-[color:var(--error)] bg-[color:rgba(241,76,76,0.12)] p-3 text-sm text-[color:var(--error)]">
+            {error}
+          </div>
+        )}
 
         {step === 0 && (
           <div className="space-y-2">
@@ -402,7 +436,9 @@ function NewProjectModal(props: {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., My SaaS Landing Page"
             />
-            <div className="text-xs text-muted-foreground">Used for display and the folder name.</div>
+            <div className="text-xs text-muted-foreground">
+              Used for display and the folder name.
+            </div>
           </div>
         )}
 
@@ -499,17 +535,26 @@ function NewProjectModal(props: {
                 onChange={(e) => setEnableImageGeneration(e.target.checked)}
               />
               <div>
-                <div className="text-sm font-semibold">Use AI image generation for design mockups</div>
-                <div className="text-xs text-muted-foreground">UI only for now; integration can be added later.</div>
+                <div className="text-sm font-semibold">
+                  Use AI image generation for design mockups
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  UI only for now; integration can be added later.
+                </div>
               </div>
             </label>
 
             <label className="flex items-start gap-3 rounded border p-3">
-              <input type="checkbox" checked={initGit} onChange={(e) => setInitGit(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={initGit}
+                onChange={(e) => setInitGit(e.target.checked)}
+              />
               <div>
                 <div className="text-sm font-semibold">Initialize a Git repository</div>
                 <div className="text-xs text-muted-foreground">
-                  This runs <code className="rounded bg-secondary px-1 py-0.5">git init</code> in the project folder.
+                  This runs <code className="rounded bg-secondary px-1 py-0.5">git init</code> in
+                  the project folder.
                 </div>
               </div>
             </label>
@@ -517,12 +562,19 @@ function NewProjectModal(props: {
         )}
 
         <div className="flex justify-between pt-2">
-          <button className="rounded border px-4 py-2 text-sm hover:bg-[#454545]" onClick={back} disabled={step === 0}>
+          <button
+            className="rounded border px-4 py-2 text-sm hover:bg-[#454545]"
+            onClick={back}
+            disabled={step === 0}
+          >
             Back
           </button>
 
           {step < 3 ? (
-            <button className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-[#106ebe]" onClick={next}>
+            <button
+              className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-[#106ebe]"
+              onClick={next}
+            >
               Next
             </button>
           ) : (
@@ -547,11 +599,6 @@ export default function App() {
   const [activeProject, setActiveProject] = useState<ProjectSummary | null>(null)
   const [tree, setTree] = useState<FileTreeNode | null>(null)
 
-  // Milestone 3: Live preview state
-  // - previewRoute: the current (browser-like) location shown in the address bar
-  // - previewFrameRoute: the route used to (re)load the iframe when we do a hard refresh
-  //   (we intentionally do NOT bind the iframe src to previewRoute, otherwise in-preview navigation
-  //    would cause unnecessary reloads).
   const [previewRoute, setPreviewRoute] = useState<string>('/')
   const [previewFrameRoute, setPreviewFrameRoute] = useState<string>('/')
   const [previewFrameNonce, setPreviewFrameNonce] = useState(0)
@@ -560,12 +607,10 @@ export default function App() {
   const [previewStarting, setPreviewStarting] = useState(false)
   const lastProjectPathRef = useRef<string | null>(null)
 
-  // Discovered routes/pages for the "complete preview" navigator (v0-style).
   const [previewRoutes, setPreviewRoutes] = useState<string[]>(['/'])
   const [previewRoutesLoading, setPreviewRoutesLoading] = useState(false)
   const [previewRoutesQuery, setPreviewRoutesQuery] = useState('')
 
-  // Milestone 4: WYSIWYG selection/edit state (best-effort v1)
   const previewIframeRef = useRef<HTMLIFrameElement | null>(null)
   const [designBridgeReady, setDesignBridgeReady] = useState(false)
   const [designInspectEnabled, setDesignInspectEnabled] = useState(false)
@@ -575,9 +620,6 @@ export default function App() {
   const [designApplying, setDesignApplying] = useState(false)
   const [designApplyError, setDesignApplyError] = useState<string | null>(null)
 
-  // Preview issue detection + auto-fix state.
-  // - runtime errors are reported from the injected bridge (see ensureBridge.ts)
-  // - logs are polled from the preview manager
   const [previewRuntimeError, setPreviewRuntimeError] = useState<PreviewRuntimeError | null>(null)
   const [, setPreviewLastLoadedAt] = useState<number>(0)
 
@@ -614,25 +656,31 @@ export default function App() {
       return {
         kind: 'server' as const,
         title: 'Preview server failed to start',
-        details: previewStatus.error ?? 'Unknown error',
+        details: previewStatus.error ?? 'Unknown error'
       }
     }
     if (previewRuntimeError) {
       return {
         kind: 'runtime' as const,
         title: 'Runtime error in preview',
-        details: previewRuntimeError.message,
+        details: previewRuntimeError.message
       }
     }
     if (previewLogErrorLine) {
       return {
         kind: 'logs' as const,
         title: 'Error detected in preview logs',
-        details: previewLogErrorLine,
+        details: previewLogErrorLine
       }
     }
     return null
-  }, [activeProject?.path, previewStatus?.state, previewStatus?.error, previewRuntimeError, previewLogErrorLine])
+  }, [
+    activeProject?.path,
+    previewStatus?.state,
+    previewStatus?.error,
+    previewRuntimeError,
+    previewLogErrorLine
+  ])
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
@@ -640,7 +688,6 @@ export default function App() {
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // --- UI layout state (new Studio design) ---
   const [leftPaneTab, setLeftPaneTab] = useState<'projects' | 'files'>('projects')
   const [chatPaneTab, setChatPaneTab] = useState<'chat' | 'logs'>('chat')
   const [previewPaneTab, setPreviewPaneTab] = useState<'preview' | 'pages'>('preview')
@@ -656,17 +703,17 @@ export default function App() {
   const filteredProjects = useMemo(() => {
     const q = projectSearch.trim().toLowerCase()
     if (!q) return projects
-    return projects.filter((p) => p.name.toLowerCase().includes(q) || p.path.toLowerCase().includes(q))
+    return projects.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.path.toLowerCase().includes(q)
+    )
   }, [projects, projectSearch])
 
-  // When no project is open, keep the layout in a sensible default state.
   useEffect(() => {
     if (activeProject) return
     setLeftPaneTab('projects')
     setChatPaneTab('chat')
     setPreviewPaneTab('preview')
   }, [activeProject?.path])
-
 
   type AsyncResult<T> = { ok: true; value: T } | { ok: false; error: unknown }
 
@@ -725,10 +772,7 @@ export default function App() {
     let disposed = false
 
     const boot = async () => {
-      // In some dev/HMR situations the preload bridge can be a tick late.
-      // A tiny retry makes the project list reliably appear on cold starts.
       for (let i = 0; i < 20; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((window as any).api) break
         await new Promise((r) => setTimeout(r, 50))
       }
@@ -737,7 +781,6 @@ export default function App() {
       const p = await refreshAll()
       if (disposed) return
 
-      // If IPC was temporarily unavailable, do one quick retry.
       if (p.length === 0) {
         setTimeout(() => {
           if (!disposed) void refreshProjectsOnly()
@@ -780,20 +823,16 @@ export default function App() {
   useEffect(() => {
     if (!activeProject) return
     void refreshPreviewRoutes(activeProject.path)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProject?.path])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
 
-  // --- Preview lifecycle (Milestone 3) --------------------------------------
-
   useEffect(() => {
     const nextPath = activeProject?.path ?? null
     const prevPath = lastProjectPathRef.current
 
-    // Stop any previous project's preview server when switching/closing.
     if (prevPath && prevPath !== nextPath) {
       void window.api.preview.stop(prevPath).catch(() => {})
     }
@@ -809,7 +848,6 @@ export default function App() {
       setAutoFixBusy(false)
       setAutoFixRequestId(null)
 
-      // Clear design state when switching projects.
       setDesignBridgeReady(false)
       setDesignInspectEnabled(false)
       setDesignSelection(null)
@@ -819,16 +857,12 @@ export default function App() {
     lastProjectPathRef.current = nextPath
   }, [activeProject?.path])
 
-  // Start preview automatically when a project is open (Chat + Design).
   useEffect(() => {
     if (!activeProject) return
     if (previewStarting) return
     void startPreview(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProject?.path])
 
-  // Poll status/logs whenever a project is open (simple + robust).
-  // This is what keeps the preview "live" even if the user stays in Chat mode.
   useEffect(() => {
     if (!activeProject) return
 
@@ -844,9 +878,7 @@ export default function App() {
         const logs = await window.api.preview.logs(projectPath, { tail: 250 })
         if (cancelled) return
         setPreviewLogs(logs)
-      } catch {
-        // Ignore transient errors (server starting, etc.)
-      }
+      } catch {}
     }
 
     void poll()
@@ -900,7 +932,12 @@ export default function App() {
       return
     }
 
-    const userMsg: ChatMessage = { id: uid(), role: 'user', content, createdAt: new Date().toISOString() }
+    const userMsg: ChatMessage = {
+      id: uid(),
+      role: 'user',
+      content,
+      createdAt: new Date().toISOString()
+    }
     const pendingId = uid()
     const pendingMsg: ChatMessage = {
       id: pendingId,
@@ -917,16 +954,18 @@ export default function App() {
     setAiBusy(true)
 
     try {
-      const res = await window.api.ai.run({ projectPath: activeProject.path, prompt: content, requestId, requireFileChanges: true })
+      const res = await window.api.ai.run({
+        projectPath: activeProject.path,
+        prompt: content,
+        requestId,
+        requireFileChanges: true
+      })
       setMessages(res.chat)
       const t = await window.api.fs.tree(activeProject.path, { maxDepth: 6 })
       setTree(t)
 
-      // Keep the route navigator up to date (new pages/routes may have been created by the AI).
       void refreshPreviewRoutes(activeProject.path)
 
-      // Hard-reload the iframe on the current route so the preview reflects changes
-      // immediately in both Chat and Design modes.
       const raw = (previewRoute || '/').trim() || '/'
       const route = raw.startsWith('/') ? raw : `/${raw}`
       setPreviewFrameRoute(route)
@@ -948,7 +987,6 @@ export default function App() {
     }
   }
 
-
   function closeProject() {
     const projectPath = activeProject?.path
     setActiveProject(null)
@@ -960,7 +998,6 @@ export default function App() {
     setChatPaneTab('chat')
     setPreviewPaneTab('preview')
 
-    // Stop preview in the background.
     if (projectPath) {
       void window.api.preview.stop(projectPath).catch(() => {})
     }
@@ -973,7 +1010,6 @@ export default function App() {
   function guessRouteFromFilePath(filePath: string): string | null {
     const p = toPosixPath(filePath)
 
-    // --- Next.js App Router -------------------------------------------------
     const appMarker = p.includes('/src/app/') ? '/src/app/' : p.includes('/app/') ? '/app/' : null
     if (appMarker) {
       const isPage = /\/page\.(tsx|ts|jsx|js)$/i.test(p)
@@ -984,15 +1020,17 @@ export default function App() {
       const segments = withoutFile
         .split('/')
         .filter(Boolean)
-        // Ignore route groups like (marketing)
         .filter((seg) => !(seg.startsWith('(') && seg.endsWith(')')))
 
       const route = '/' + segments.join('/')
       return route === '/' ? '/' : route
     }
 
-    // --- Next.js Pages Router -----------------------------------------------
-    const pagesMarker = p.includes('/src/pages/') ? '/src/pages/' : p.includes('/pages/') ? '/pages/' : null
+    const pagesMarker = p.includes('/src/pages/')
+      ? '/src/pages/'
+      : p.includes('/pages/')
+        ? '/pages/'
+        : null
     if (pagesMarker) {
       if (!/\.(tsx|ts|jsx|js)$/i.test(p)) return null
 
@@ -1003,13 +1041,10 @@ export default function App() {
       const segments = withoutExt.split('/').filter(Boolean)
 
       const last = segments[segments.length - 1] ?? ''
-      // Ignore special Next files
       if (last.startsWith('_')) return null
 
-      // index => folder route
       if (last === 'index') segments.pop()
 
-      // Ignore API routes (pages/api/*)
       if ((segments[0] ?? '').toLowerCase() === 'api') return null
 
       const route = '/' + segments.join('/')
@@ -1018,7 +1053,6 @@ export default function App() {
 
     return null
   }
-
 
   function collectRoutesFromTree(node: FileTreeNode | null, out: Set<string>) {
     if (!node) return
@@ -1035,11 +1069,10 @@ export default function App() {
   async function refreshPreviewRoutes(projectPath: string) {
     setPreviewRoutesLoading(true)
     try {
-      // Use a deeper tree so we reliably find all pages/routes (v0-style complete preview).
       const deep = await window.api.fs.tree(projectPath, { maxDepth: 25 })
       const set = new Set<string>()
       collectRoutesFromTree(deep, set)
-      set.add('/') // always include home
+      set.add('/')
 
       const arr = Array.from(set)
       arr.sort((a, b) => {
@@ -1081,8 +1114,6 @@ export default function App() {
       const logs = await window.api.preview.logs(projectPath, { tail: 250 })
       setPreviewLogs(logs)
 
-      // Force-refresh the embedded frame (useful after restarts).
-      // Reload on the currently shown route (browser-like address bar).
       const raw = (previewRoute || '/').trim() || '/'
       const route = raw.startsWith('/') ? raw : `/${raw}`
       setPreviewFrameRoute(route)
@@ -1118,7 +1149,6 @@ export default function App() {
       const logs = await window.api.preview.logs(projectPath, { tail: 250 })
       setPreviewLogs(logs)
 
-      // Hard-refresh the iframe on the currently shown route (browser-like address bar).
       const raw = (previewRoute || '/').trim() || '/'
       const route = raw.startsWith('/') ? raw : `/${raw}`
       setPreviewFrameRoute(route)
@@ -1152,9 +1182,10 @@ export default function App() {
       let lastFailure: string | null = null
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        // Pull the freshest state/logs we can.
         const st = await window.api.preview.status(projectPath).catch(() => previewStatus)
-        const logs = await window.api.preview.logs(projectPath, { tail: 350 }).catch(() => previewLogs)
+        const logs = await window.api.preview
+          .logs(projectPath, { tail: 350 })
+          .catch(() => previewLogs)
 
         const runtime = previewRuntimeErrorRef.current ?? runtimeSnapshot
         const route = normalizeRoute(previewRoute)
@@ -1181,7 +1212,7 @@ export default function App() {
           '- Make the minimal changes needed.',
           '- If dependencies are missing, add them and include a Dependencies: [...] line.',
           '- Output any changed files using this exact format:',
-          '  File: path/to/file\n  ```tsx\n  ...\n  ```',
+          '  File: path/to/file\n  ```tsx\n  ...\n  ```'
         ]
           .filter(Boolean)
           .join('\n')
@@ -1189,34 +1220,35 @@ export default function App() {
         const requestId = uid()
         setAutoFixRequestId(requestId)
 
-        const res = await window.api.ai.run({ projectPath, prompt, requestId, requireFileChanges: true })
+        const res = await window.api.ai.run({
+          projectPath,
+          prompt,
+          requestId,
+          requireFileChanges: true
+        })
         setMessages(res.chat)
 
         if (res.cancelled) {
-          // User pressed Stop (or the request timed out). Don't treat as an auto-fix failure.
           return
         }
 
-        // If the model didn't return any applyable changes, don't waste attempts.
-        if ((res.appliedFiles?.length ?? 0) === 0 && (res.installedDependencies?.length ?? 0) === 0) {
+        if (
+          (res.appliedFiles?.length ?? 0) === 0 &&
+          (res.installedDependencies?.length ?? 0) === 0
+        ) {
           lastFailure =
             'AI did not return any file updates (no File blocks / Dependencies). Try switching to a different model in Settings.'
           break
         }
 
-        // Refresh the project tree and route list — the AI may have created new pages.
         try {
           const t = await window.api.fs.tree(projectPath, { maxDepth: 6 })
           setTree(t)
-        } catch {
-          // ignore
-        }
+        } catch {}
         void refreshPreviewRoutes(projectPath)
 
-        // Restart the preview and hard-reload the iframe.
         await startPreview(true)
 
-        // Give the preview a moment to boot and emit fresh logs.
         await sleep(2500)
 
         const st2 = await window.api.preview.status(projectPath).catch(() => null)
@@ -1241,7 +1273,6 @@ export default function App() {
           continue
         }
 
-        // Best-effort success.
         lastFailure = null
         setAutoFixError(null)
         return
@@ -1258,108 +1289,100 @@ export default function App() {
     }
   }
 
+  const postToPreview = useCallback((payload: any) => {
+    const win = previewIframeRef.current?.contentWindow
+    if (!win) return
+    win.postMessage(payload, '*')
+  }, [])
 
-// --- Milestone 4: Design Bridge messaging (WYSIWYG v1) ---
-const postToPreview = useCallback((payload: any) => {
-  const win = previewIframeRef.current?.contentWindow
-  if (!win) return
-  win.postMessage(payload, '*')
-}, [])
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const frameWin = previewIframeRef.current?.contentWindow
+      if (frameWin && event.source !== frameWin) return
 
-// Listen for messages from the preview's studioDesignBridge (running inside the iframe).
-useEffect(() => {
-  const onMessage = (event: MessageEvent) => {
-    const frameWin = previewIframeRef.current?.contentWindow
-    if (frameWin && event.source !== frameWin) return
+      const data = event.data as any
+      if (!data || typeof data !== 'object') return
+      if (data.kind !== 'studio:design') return
 
-    const data = event.data as any
-    if (!data || typeof data !== 'object') return
-    if (data.kind !== 'studio:design') return
+      if (data.type === 'ready' || data.type === 'pong') {
+        setDesignBridgeReady(true)
+        return
+      }
 
-    if (data.type === 'ready' || data.type === 'pong') {
-      setDesignBridgeReady(true)
-      return
+      if (data.type === 'selected') {
+        const sel = data.selection as DesignSelection | undefined
+        if (sel) setDesignSelection(sel)
+        return
+      }
+
+      if (data.type === 'runtime-error') {
+        const message = typeof data.message === 'string' ? data.message : 'Runtime error'
+        const stack = typeof data.stack === 'string' ? data.stack : undefined
+        const route = typeof data.route === 'string' ? data.route : undefined
+        const source = typeof data.source === 'string' ? data.source : undefined
+        setPreviewRuntimeError({
+          message: clampText(message, 4000),
+          stack,
+          route,
+          source,
+          at: new Date().toISOString()
+        })
+        return
+      }
+
+      if (data.type === 'console' && data.level === 'error') {
+        const message = typeof data.message === 'string' ? data.message : 'Console error'
+
+        setPreviewRuntimeError((prev) =>
+          prev
+            ? prev
+            : {
+                message: clampText(message, 4000),
+                route: typeof data.route === 'string' ? data.route : undefined,
+                source: 'console.error',
+                at: new Date().toISOString()
+              }
+        )
+        return
+      }
+
+      if (data.type === 'route') {
+        const r = typeof data.route === 'string' ? data.route : '/'
+        const raw = r.trim() || '/'
+        const route = raw.startsWith('/') ? raw : `/${raw}`
+        setPreviewRoute(route)
+        return
+      }
     }
 
-    if (data.type === 'selected') {
-      const sel = data.selection as DesignSelection | undefined
-      if (sel) setDesignSelection(sel)
-      return
-    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
 
-    if (data.type === 'runtime-error') {
-      const message = typeof data.message === 'string' ? data.message : 'Runtime error'
-      const stack = typeof data.stack === 'string' ? data.stack : undefined
-      const route = typeof data.route === 'string' ? data.route : undefined
-      const source = typeof data.source === 'string' ? data.source : undefined
-      setPreviewRuntimeError({
-        message: clampText(message, 4000),
-        stack,
-        route,
-        source,
-        at: new Date().toISOString(),
-      })
-      return
-    }
+  useEffect(() => {
+    if (!designSelection) return
+    setDesignTextDraft(designSelection.text ?? '')
+    setDesignClassDraft(designSelection.className ?? '')
+    setDesignApplyError(null)
+  }, [designSelection?.selector])
 
-    if (data.type === 'console' && data.level === 'error') {
-      const message = typeof data.message === 'string' ? data.message : 'Console error'
-      // Only set a fallback error if we don't already have a runtime error.
-      setPreviewRuntimeError((prev) =>
-        prev
-          ? prev
-          : {
-              message: clampText(message, 4000),
-              route: typeof data.route === 'string' ? data.route : undefined,
-              source: 'console.error',
-              at: new Date().toISOString(),
-            }
-      )
-      return
-    }
+  useEffect(() => {
+    if (!previewSrc) return
+    postToPreview({ kind: 'studio:design', type: 'ping' })
+    postToPreview({ kind: 'studio:design', type: 'enable', enabled: designInspectEnabled })
+  }, [previewFrameNonce, previewSrc, designInspectEnabled, postToPreview])
 
-    if (data.type === 'route') {
-      const r = typeof data.route === 'string' ? data.route : '/'
-      const raw = r.trim() || '/'
-      const route = raw.startsWith('/') ? raw : `/${raw}`
-      setPreviewRoute(route)
-      return
-    }
-  }
+  useEffect(() => {
+    if (previewSrc) return
+    if (designInspectEnabled) setDesignInspectEnabled(false)
+    if (designSelection) setDesignSelection(null)
+  }, [previewSrc, designInspectEnabled, designSelection])
 
-  window.addEventListener('message', onMessage)
-  return () => window.removeEventListener('message', onMessage)
-}, [])
-
-// Keep draft inputs in sync with the latest selection.
-useEffect(() => {
-  if (!designSelection) return
-  setDesignTextDraft(designSelection.text ?? '')
-  setDesignClassDraft(designSelection.className ?? '')
-  setDesignApplyError(null)
-}, [designSelection?.selector])
-
-// When the preview loads/reloads, ping the bridge and (re)apply inspect toggle state.
-useEffect(() => {
-  if (!previewSrc) return
-  postToPreview({ kind: 'studio:design', type: 'ping' })
-  postToPreview({ kind: 'studio:design', type: 'enable', enabled: designInspectEnabled })
-}, [previewFrameNonce, previewSrc, designInspectEnabled, postToPreview])
-
-// If the preview is not running, keep inspect off and clear any stale selection.
-useEffect(() => {
-  if (previewSrc) return
-  if (designInspectEnabled) setDesignInspectEnabled(false)
-  if (designSelection) setDesignSelection(null)
-}, [previewSrc, designInspectEnabled, designSelection])
-
-  // Keyboard shortcuts for the Studio shell (matches the new UI command bar).
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const key = e.key
       const isCmd = e.metaKey || e.ctrlKey
 
-      // Avoid stealing normal typing behavior.
       const target = e.target as HTMLElement | null
       const tag = target?.tagName
       const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || (target as any)?.isContentEditable
@@ -1403,7 +1426,6 @@ useEffect(() => {
 
       if (key === 'Escape') {
         if (!designInspectEnabled) return
-        // Esc clears selection first, then exits inspect mode.
         if (designSelection) {
           setDesignSelection(null)
           return
@@ -1413,7 +1435,6 @@ useEffect(() => {
         return
       }
 
-      // If the user is typing, don't steal other keys.
       if (isTyping) return
     }
 
@@ -1429,48 +1450,44 @@ useEffect(() => {
     postToPreview
   ])
 
-const applyDesignChanges = async () => {
-  if (!activeProject) return
-  if (!designSelection) return
+  const applyDesignChanges = async () => {
+    if (!activeProject) return
+    if (!designSelection) return
 
-  const req: DesignApplyRequest = {
-    projectPath: activeProject.path,
-    route: (previewRoute || '/').split(/[?#]/)[0] || '/',
-    selector: designSelection.selector,
-    originalText: designSelection.text,
-    newText: designTextDraft,
-    originalClassName: designSelection.className,
-    newClassName: designClassDraft
-  }
-
-  setDesignApplying(true)
-  setDesignApplyError(null)
-  try {
-    const res: DesignApplyResult = await window.api.design.apply(req)
-    if (!res?.ok) throw new Error(res?.message || 'Failed to apply design changes')
-
-    // Update preview DOM immediately as a UX nicety; Next HMR will reconcile after file write.
-    postToPreview({
-      kind: 'studio:design',
-      type: 'apply',
+    const req: DesignApplyRequest = {
+      projectPath: activeProject.path,
+      route: (previewRoute || '/').split(/[?#]/)[0] || '/',
       selector: designSelection.selector,
+      originalText: designSelection.text,
       newText: designTextDraft,
+      originalClassName: designSelection.className,
       newClassName: designClassDraft
-    })
+    }
 
-    // Fallback reload: some changes can require a refresh.
-    // Reload on the currently shown route (browser-like address bar).
-    const raw = (previewRoute || '/').trim() || '/'
-    const route = raw.startsWith('/') ? raw : `/${raw}`
-    setPreviewFrameRoute(route)
-    setPreviewFrameNonce((n) => n + 1)
-  } catch (err) {
-    setDesignApplyError(err instanceof Error ? err.message : String(err))
-  } finally {
-    setDesignApplying(false)
+    setDesignApplying(true)
+    setDesignApplyError(null)
+    try {
+      const res: DesignApplyResult = await window.api.design.apply(req)
+      if (!res?.ok) throw new Error(res?.message || 'Failed to apply design changes')
+
+      postToPreview({
+        kind: 'studio:design',
+        type: 'apply',
+        selector: designSelection.selector,
+        newText: designTextDraft,
+        newClassName: designClassDraft
+      })
+
+      const raw = (previewRoute || '/').trim() || '/'
+      const route = raw.startsWith('/') ? raw : `/${raw}`
+      setPreviewFrameRoute(route)
+      setPreviewFrameNonce((n) => n + 1)
+    } catch (err) {
+      setDesignApplyError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setDesignApplying(false)
+    }
   }
-}
-
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
@@ -1612,7 +1629,11 @@ const applyDesignChanges = async () => {
         left={
           <div className="flex h-full flex-col border-r border-border bg-[var(--pane-bg)]">
             <div className="flex">
-              <TabButton active={leftPaneTab === 'projects'} onClick={() => setLeftPaneTab('projects')} className="flex-1">
+              <TabButton
+                active={leftPaneTab === 'projects'}
+                onClick={() => setLeftPaneTab('projects')}
+                className="flex-1"
+              >
                 Projects
               </TabButton>
               <TabButton
@@ -1642,7 +1663,9 @@ const applyDesignChanges = async () => {
                   ) : filteredProjects.length === 0 ? (
                     <div className="space-y-2">
                       <div className="text-xs text-muted-foreground">No projects found.</div>
-                      <ToolButton onClick={() => setNewProjectOpen(true)}>＋ Create a project</ToolButton>
+                      <ToolButton onClick={() => setNewProjectOpen(true)}>
+                        ＋ Create a project
+                      </ToolButton>
                     </div>
                   ) : (
                     <div className="space-y-1">
@@ -1666,9 +1689,13 @@ const applyDesignChanges = async () => {
                                 <span className="mr-2">📦</span>
                                 {p.name}
                               </div>
-                              {isActive ? <span className="text-[11px] opacity-90">Open</span> : null}
+                              {isActive ? (
+                                <span className="text-[11px] opacity-90">Open</span>
+                              ) : null}
                             </div>
-                            <div className="mt-1 truncate text-[11px] opacity-70">{p.templateId}</div>
+                            <div className="mt-1 truncate text-[11px] opacity-70">
+                              {p.templateId}
+                            </div>
                           </button>
                         )
                       })}
@@ -1679,7 +1706,9 @@ const applyDesignChanges = async () => {
             ) : (
               <div className="min-h-0 flex-1 overflow-auto p-2">
                 {!activeProject ? (
-                  <div className="text-xs text-muted-foreground">Open a project to browse files.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Open a project to browse files.
+                  </div>
                 ) : tree ? (
                   <TreeView
                     root={tree}
@@ -1703,10 +1732,18 @@ const applyDesignChanges = async () => {
         chat={
           <div className="flex h-full flex-col border-r border-border bg-[var(--pane-bg)]">
             <div className="flex">
-              <TabButton active={chatPaneTab === 'chat'} onClick={() => setChatPaneTab('chat')} className="flex-1">
+              <TabButton
+                active={chatPaneTab === 'chat'}
+                onClick={() => setChatPaneTab('chat')}
+                className="flex-1"
+              >
                 Chat
               </TabButton>
-              <TabButton active={chatPaneTab === 'logs'} onClick={() => setChatPaneTab('logs')} className="flex-1">
+              <TabButton
+                active={chatPaneTab === 'logs'}
+                onClick={() => setChatPaneTab('logs')}
+                className="flex-1"
+              >
                 Logs
               </TabButton>
             </div>
@@ -1718,18 +1755,24 @@ const applyDesignChanges = async () => {
                     <div className="space-y-2">
                       <div className="text-sm font-semibold">Welcome to Studio</div>
                       <div className="text-xs text-muted-foreground">
-                        Create or open a project to start chatting with the AI and previewing your app.
+                        Create or open a project to start chatting with the AI and previewing your
+                        app.
                       </div>
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="space-y-2">
                       <div className="text-xs text-muted-foreground">No messages yet.</div>
-                      <div className="text-xs text-muted-foreground">Try: “Build a landing page with a hero and pricing section.”</div>
+                      <div className="text-xs text-muted-foreground">
+                        Try: “Build a landing page with a hero and pricing section.”
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {messages.map((m) => (
-                        <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+                        <div
+                          key={m.id}
+                          className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}
+                        >
                           <div
                             className={
                               'max-w-[85%] whitespace-pre-wrap border border-border px-3 py-2 text-xs leading-relaxed ' +
@@ -1753,15 +1796,21 @@ const applyDesignChanges = async () => {
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={onChatKeyDown}
-                    placeholder={activeProject ? "Describe what you want to build…" : "Open a project to start chatting…"}
+                    placeholder={
+                      activeProject
+                        ? 'Describe what you want to build…'
+                        : 'Open a project to start chatting…'
+                    }
                     disabled={!activeProject || aiBusy || autoFixBusy}
                   />
 
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="text-[11px] text-muted-foreground">Enter to send · Shift+Enter for newline</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Enter to send · Shift+Enter for newline
+                    </div>
 
                     <div className="flex gap-2">
-                      {(aiBusy || autoFixBusy) ? (
+                      {aiBusy || autoFixBusy ? (
                         <ToolButton onClick={() => void cancelAi()} title="Cancel current AI task">
                           ■ Stop
                         </ToolButton>
@@ -1781,15 +1830,21 @@ const applyDesignChanges = async () => {
             ) : (
               <div className="min-h-0 flex-1 overflow-auto p-3">
                 {!activeProject ? (
-                  <div className="text-xs text-muted-foreground">Open a project to view preview logs.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Open a project to view preview logs.
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {previewRuntimeError ? (
                       <div className="border border-[color:var(--error)] bg-[color:rgba(241,76,76,0.10)] p-3 text-xs">
                         <div className="font-semibold">Runtime error</div>
-                        <div className="mt-1 whitespace-pre-wrap opacity-90">{previewRuntimeError.message}</div>
+                        <div className="mt-1 whitespace-pre-wrap opacity-90">
+                          {previewRuntimeError.message}
+                        </div>
                         {previewRuntimeError.stack ? (
-                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap border border-border bg-background p-2 text-[11px]">{previewRuntimeError.stack}</pre>
+                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap border border-border bg-background p-2 text-[11px]">
+                            {previewRuntimeError.stack}
+                          </pre>
                         ) : null}
                       </div>
                     ) : null}
@@ -1806,10 +1861,19 @@ const applyDesignChanges = async () => {
         preview={
           <div className="flex h-full flex-col bg-[var(--pane-bg)]">
             <div className="flex border-b border-border bg-[var(--toolbar-bg)]">
-              <TabButton active={previewPaneTab === 'preview'} onClick={() => setPreviewPaneTab('preview')} className="flex-1">
+              <TabButton
+                active={previewPaneTab === 'preview'}
+                onClick={() => setPreviewPaneTab('preview')}
+                className="flex-1"
+              >
                 Preview
               </TabButton>
-              <TabButton active={previewPaneTab === 'pages'} onClick={() => setPreviewPaneTab('pages')} className="flex-1" disabled={!activeProject}>
+              <TabButton
+                active={previewPaneTab === 'pages'}
+                onClick={() => setPreviewPaneTab('pages')}
+                className="flex-1"
+                disabled={!activeProject}
+              >
                 Pages
               </TabButton>
             </div>
@@ -1817,7 +1881,9 @@ const applyDesignChanges = async () => {
             {previewPaneTab === 'pages' ? (
               <div className="flex min-h-0 flex-1 flex-col">
                 <div className="flex items-center justify-between border-b border-border bg-[var(--toolbar-bg)] px-3 py-2">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Routes</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Routes
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-muted-foreground">
                       {previewRoutesLoading ? 'Scanning…' : `${previewRoutes.length} found`}
@@ -1844,7 +1910,9 @@ const applyDesignChanges = async () => {
 
                 <div className="min-h-0 flex-1 overflow-auto p-2">
                   {!activeProject ? (
-                    <div className="text-xs text-muted-foreground">Open a project to scan routes.</div>
+                    <div className="text-xs text-muted-foreground">
+                      Open a project to scan routes.
+                    </div>
                   ) : previewRoutesLoading ? (
                     <div className="text-xs text-muted-foreground">Scanning…</div>
                   ) : (
@@ -1877,14 +1945,18 @@ const applyDesignChanges = async () => {
                 {/* Navigation */}
                 <div className="flex items-center gap-1 border-b border-border bg-[var(--toolbar-bg)] px-2 py-2">
                   <ToolButton
-                    onClick={() => postToPreview({ kind: 'studio:design', type: 'nav', action: 'back' })}
+                    onClick={() =>
+                      postToPreview({ kind: 'studio:design', type: 'nav', action: 'back' })
+                    }
                     disabled={!previewSrc}
                     title="Back"
                   >
                     ←
                   </ToolButton>
                   <ToolButton
-                    onClick={() => postToPreview({ kind: 'studio:design', type: 'nav', action: 'forward' })}
+                    onClick={() =>
+                      postToPreview({ kind: 'studio:design', type: 'nav', action: 'forward' })
+                    }
                     disabled={!previewSrc}
                     title="Forward"
                   >
@@ -1951,7 +2023,11 @@ const applyDesignChanges = async () => {
                   </ToolButton>
 
                   <div className="ml-1 text-[11px] text-muted-foreground">
-                    {previewStatus?.state === 'starting' ? 'Starting…' : previewStatus?.state === 'running' ? 'Live' : ''}
+                    {previewStatus?.state === 'starting'
+                      ? 'Starting…'
+                      : previewStatus?.state === 'running'
+                        ? 'Live'
+                        : ''}
                   </div>
                 </div>
 
@@ -1980,7 +2056,9 @@ const applyDesignChanges = async () => {
                 {autoFixError ? (
                   <div className="border-b border-border bg-[color:rgba(241,76,76,0.10)] p-3 text-xs">
                     <div className="font-semibold">Auto-fix failed</div>
-                    <div className="mt-1 whitespace-pre-wrap text-[11px] text-muted-foreground">{autoFixError}</div>
+                    <div className="mt-1 whitespace-pre-wrap text-[11px] text-muted-foreground">
+                      {autoFixError}
+                    </div>
                   </div>
                 ) : null}
 
@@ -1994,7 +2072,9 @@ const applyDesignChanges = async () => {
                       <div className="flex h-full items-center justify-center p-6">
                         <div className="max-w-xl border border-border bg-popover p-4 text-xs">
                           <div className="font-semibold">Preview error</div>
-                          <div className="mt-2 whitespace-pre-wrap text-muted-foreground">{previewStatus.error ?? 'Unknown error'}</div>
+                          <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                            {previewStatus.error ?? 'Unknown error'}
+                          </div>
                         </div>
                       </div>
                     ) : previewSrc ? (
@@ -2011,7 +2091,11 @@ const applyDesignChanges = async () => {
                           previewRuntimeErrorRef.current = null
                           setAutoFixError(null)
                           postToPreview({ kind: 'studio:design', type: 'ping' })
-                          postToPreview({ kind: 'studio:design', type: 'enable', enabled: designInspectEnabled })
+                          postToPreview({
+                            kind: 'studio:design',
+                            type: 'enable',
+                            enabled: designInspectEnabled
+                          })
                         }}
                       />
                     ) : (
@@ -2024,30 +2108,42 @@ const applyDesignChanges = async () => {
                   {designInspectEnabled ? (
                     <div className="w-80 shrink-0 border-l border-border bg-[var(--pane-bg)]">
                       <div className="border-b border-border bg-[var(--toolbar-bg)] px-3 py-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inspector</div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Inspector
+                        </div>
                       </div>
                       <div className="h-full overflow-auto p-3">
                         {!previewSrc ? (
-                          <div className="text-xs text-muted-foreground">Run preview to inspect elements.</div>
+                          <div className="text-xs text-muted-foreground">
+                            Run preview to inspect elements.
+                          </div>
                         ) : !designBridgeReady ? (
-                          <div className="text-xs text-muted-foreground">Waiting for the inspector bridge…</div>
+                          <div className="text-xs text-muted-foreground">
+                            Waiting for the inspector bridge…
+                          </div>
                         ) : !designSelection ? (
                           <div className="space-y-2">
                             <div className="text-xs text-muted-foreground">
                               Click an element in the preview to edit text and className.
                             </div>
-                            <div className="text-[11px] text-muted-foreground">Tip: press Esc to clear selection.</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              Tip: press Esc to clear selection.
+                            </div>
                           </div>
                         ) : (
                           <div className="space-y-3">
                             <div className="space-y-1">
                               <div className="text-[11px] text-muted-foreground">Tag</div>
-                              <div className="border border-border bg-secondary px-2 py-1 text-xs">{designSelection.tag}</div>
+                              <div className="border border-border bg-secondary px-2 py-1 text-xs">
+                                {designSelection.tag}
+                              </div>
                             </div>
 
                             <div className="space-y-1">
                               <div className="text-[11px] text-muted-foreground">Selector</div>
-                              <div className="border border-border bg-secondary px-2 py-1 text-[11px]">{designSelection.selector}</div>
+                              <div className="border border-border bg-secondary px-2 py-1 text-[11px]">
+                                {designSelection.selector}
+                              </div>
                             </div>
 
                             <div className="space-y-1">
@@ -2123,6 +2219,4 @@ const applyDesignChanges = async () => {
       />
     </div>
   )
-
 }
-

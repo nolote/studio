@@ -1,42 +1,97 @@
-studio patch v6
+# Studio
 
-What this patch fixes/improves
+Studio is an open-source, local-first desktop app for building modern web apps with AI.
 
-1) Stops AI runs from crashing on hallucinated/bad npm deps
-   - Filters common invalid deps (including @next/* like @next/navigation)
-   - Dependency installs are now best-effort: they won't abort the whole AI run
-   - Skipped deps are reported back to the UI/chat so the model can adjust
+It provides a chat-driven workflow (prompt → generate → refine) plus a live preview and a visual editor so you can iterate quickly on a real Next.js codebase that lives on your machine.
 
-2) Makes AI output parsing more tolerant
-   - Supports headings like "### src/app/page.tsx" followed by a code fence
-   - Supports fences like "```tsx file=src/app/page.tsx"
-   - Dependencies lines can be prefixed with bullets or headings
+- Website: <https://studio.nolote.com>
+- Docs: <https://studio.nolote.com/docs>
 
-3) Makes AI prompting more reliable and v0-like
-   - Stronger system prompt to enforce correct Next.js App Router + Tailwind patterns
-   - Adds an automatic build-check + fix loop after applying AI changes:
-     - Runs `pnpm run build` (or npm/yarn if detected)
-     - If build fails, re-prompts the model with the error output and retries (up to 4 passes)
+## Project status
 
-Files included
+This repository is in active development and currently uses early version numbers (e.g. `0.1.0` at the repo root). Expect some rough edges.
 
-- apps/studio/src/main/index.ts
-- apps/studio/src/shared/types.ts
-- packages/codegen/src/apply.ts
-- packages/codegen/src/parse.ts
-- packages/codegen/src/types.ts
+## Key features
 
-How to apply
+- **Local-first workflow**: core project files are generated and edited locally.
+- **Next.js + Tailwind output**: generated projects use a modern stack by default.
+- **Template library**: start from scratch or from curated templates.
+- **Chat-based iteration**: refine and extend projects by describing changes in plain language.
+- **Live preview**: run a Next.js dev server for the generated project and preview it inside the app.
+- **Design mode**: visually inspect/select elements and apply safe code edits.
+- **Model flexibility**: use local models (e.g. via Ollama / LM Studio) or a cloud model (bring your own API key).
+- **Project history**: optional Git initialization and change tracking.
 
-1) Unzip this patch at the ROOT of your studio repo (so it merges into apps/ and packages/).
-2) Reinstall deps if needed:
-   pnpm install
-3) Rebuild Studio:
-   pnpm -C apps/studio build
-   (or your normal dev/build command)
+## Quickstart
 
-Notes
+### Prerequisites
 
-- If you're using a slower Ollama model, AI calls can still take time. The timeout for local mode was increased.
-- The auto-fix loop is designed to keep the chat clean by only storing the final summary message,
-  but it still iterates internally until `pnpm run build` succeeds or the max passes are reached.
+- **Node.js**: the template kit expects Node **>= 20.9.0**.
+- **pnpm**: this repo is set up for pnpm workspaces.
+
+### Install
+
+```bash
+pnpm install
+```
+
+### Run Studio (desktop app)
+
+```bash
+pnpm dev:studio
+```
+
+### Run Template Kit (optional)
+
+The template kit is the Next.js scaffold that Studio copies into new projects.
+
+```bash
+pnpm dev:template-kit
+```
+
+## Configuration
+
+### Studio environment variables
+
+The desktop app reads environment variables from `apps/studio/.env` in development.
+
+Typical values include:
+
+- `studio_TEMPLATE_KIT_PATH`: path to the template kit package
+- `studio_TEMPLATES_PATH`: path to the templates package
+- `studio_PROJECTS_ROOT`: default folder where generated projects are created
+
+## Where Studio stores project state
+
+For each generated project, Studio stores metadata in a **`.studio/`** folder inside that project (for example, project metadata and chat history).
+
+## Repository layout
+
+This is a monorepo.
+
+- `apps/studio/` — the Studio desktop app (Electron + React)
+- `packages/engine/` — provider-agnostic AI engine (chat + adapters)
+- `packages/codegen/` — parses AI output and applies file changes
+- `packages/preview/` — starts/stops a Next.js dev server and streams status/logs
+- `packages/templates/` — template registry + overlays
+- `packages/template-kit/` — base scaffold copied into new projects
+
+## Contributing
+
+Contributions are welcome.
+
+- See [CONTRIBUTING.md](CONTRIBUTING.md)
+- Be mindful of the monorepo boundaries (apps vs packages) and keep changes focused.
+
+## License
+
+Studio is free to use and open source.
+
+See [LICENSE.md](LICENSE.md).
+
+## Credits & contact
+
+Developed by **Boris Karaoglanov** at **Nolote**.
+
+- Email: <boris@nolote.com>
+- Contact: <contact@nolote.com>

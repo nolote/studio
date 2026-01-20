@@ -1,8 +1,8 @@
 {
-  "name": "@nolote/studio-engine",
+  "name": "@studio/engine",
   "version": "0.1.0",
   "private": true,
-  "description": "Studio AI engine: provider-agnostic chat + streaming adapters (Ollama, OpenAI).",
+  "description": "studio AI engine: provider-agnostic chat + streaming adapters (Ollama, OpenAI).",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,11 +18,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint .",
-    "test": "vitest run",
     "dev": "tsc -p tsconfig.json -w"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.11.30",
     "typescript": "^5.3.3"
