@@ -1,0 +1,53 @@
+appId: com.nolote.studio
+productName: Studio
+
+directories:
+  buildResources: build
+
+files:
+- "!**/.vscode/*"
+- "!src/*"
+- "!electron.vite.config.{js,ts,mjs,cjs}"
+- "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
+- "!{.env,.env.*,.npmrc,pnpm-lock.yaml,package-lock.json}"
+- "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+
+asarUnpack:
+- resources/**
+
+# Bundle the built-in kits/templates so the packaged app can create Next.js projects
+# without relying on a monorepo checkout on disk.
+extraResources:
+- from: ../../packages/template-kit
+  to: studio/template-kit
+- from: ../../packages/templates
+  to: studio/templates
+
+win:
+  executableName: studio
+
+nsis:
+  artifactName: ${productName}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false
+
+dmg:
+  artifactName: ${productName}-${version}.${ext}
+
+linux:
+  target:
+  - AppImage
+  - snap
+  - deb
+  maintainer: Nolote
+  category: Utility
+
+appImage:
+  artifactName: ${productName}-${version}.${ext}
+
+npmRebuild: false
